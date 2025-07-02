@@ -1,53 +1,208 @@
 import Link from "next/link"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 
-async function getProgressData() {
-  // In a real app, this would fetch from your database
-  return {
-    overallStats: {
-      totalLessons: 45,
-      completedLessons: 32,
-      averageScore: 87,
-      timeSpent: 240, // minutes
-      currentStreak: 7,
-      longestStreak: 15,
-    },
-    categoryProgress: [
-      { name: "Programming", completed: 15, total: 20, avgScore: 92 },
-      { name: "Data Science", completed: 8, total: 15, avgScore: 85 },
-      { name: "Design", completed: 5, total: 10, avgScore: 78 },
-      { name: "Business", completed: 4, total: 8, avgScore: 90 },
-    ],
-    recentActivity: [
-      { date: "2024-01-15", lessonsCompleted: 3, timeSpent: 25 },
-      { date: "2024-01-14", lessonsCompleted: 2, timeSpent: 15 },
-      { date: "2024-01-13", lessonsCompleted: 4, timeSpent: 35 },
-      { date: "2024-01-12", lessonsCompleted: 1, timeSpent: 8 },
-      { date: "2024-01-11", lessonsCompleted: 2, timeSpent: 18 },
-      { date: "2024-01-10", lessonsCompleted: 3, timeSpent: 22 },
-      { date: "2024-01-09", lessonsCompleted: 2, timeSpent: 12 },
-    ],
-    achievements: [
-      { id: 1, title: "First Steps", description: "Complete your first lesson", earned: true, date: "2024-01-01" },
-      { id: 2, title: "Week Warrior", description: "Maintain a 7-day streak", earned: true, date: "2024-01-08" },
-      { id: 3, title: "Quiz Master", description: "Score 90%+ on 5 quizzes", earned: true, date: "2024-01-12" },
-      { id: 4, title: "Speed Learner", description: "Complete 10 lessons in one day", earned: false, date: null },
-      { id: 5, title: "Perfect Score", description: "Get 100% on any quiz", earned: true, date: "2024-01-10" },
-    ],
+async function getProgressData(userId: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: {
+        progress: {
+          include: {
+            lesson: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        },
+        streaks: true,
+        achievements: {
+          include: {
+            achievement: true,
+          },
+        },
+      },
+    })
+
+    if (!user) {
+      return {
+        overallStats: {
+          totalLessons: 0,
+          completedLessons: 0,
+          averageScore: 0,
+          timeSpent: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+        },
+        categoryProgress: [],
+        recentActivity: [],
+        achievements: [],
+      }
+    }
+
+    const completedProgress = user.progress.filter((p) => p.completed)
+    const totalLessons = await prisma.lesson.count({ where: { isPublished: true } })
+    const averageScore =
+      completedProgress.length > 0
+        ? Math.round(completedProgress.reduce((sum, p) => sum + (p.score || 0), 0) / completedProgress.length)
+        : 0
+    const totalTimeSpent = user.progress.reduce((sum, p) => sum + (p.timeSpent || 0), 0)
+
+    // Get category progress
+    const categories = await prisma.category.findMany({
+      include: {
+        lessons: {
+          where: { isPublished: true },
+          include: {
+            progress: {
+              where: { userId },
+            },
+          },
+        },
+      },
+    })
+
+    const categoryProgress = categories
+      .map((category) => {
+        const totalCategoryLessons = category.lessons.length
+        const completedCategoryLessons = category.lessons.filter((lesson) =>
+          lesson.progress.some((p) => p.completed),
+        ).length
+        const categoryScores = category.lessons
+          .flatMap((lesson) => lesson.progress.filter((p) => p.completed && p.score))
+          .map((p) => p.score!)
+        const avgScore =
+          categoryScores.length > 0
+            ? Math.round(categoryScores.reduce((sum, score) => sum + score, 0) / categoryScores.length)
+            : 0
+
+        return {
+          name: category.name,
+          completed: completedCategoryLessons,
+          total: totalCategoryLessons,
+          avgScore,
+        }
+      })
+      .filter((cat) => cat.total > 0)
+
+    // Get recent activity (last 7 days)
+    const recentActivity = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dayStart = new Date(date.setHours(0, 0, 0, 0))
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999))
+
+      const dayProgress = user.progress.filter(
+        (p) => p.completedAt && p.completedAt >= dayStart && p.completedAt <= dayEnd && p.completed,
+      )
+
+      const timeSpent = dayProgress.reduce((sum, p) => sum + (p.timeSpent || 0), 0)
+
+      recentActivity.push({
+        date: dayStart.toISOString().split("T")[0],
+        lessonsCompleted: dayProgress.length,
+        timeSpent: Math.round(timeSpent / 60), // Convert to minutes
+      })
+    }
+
+    // Format achievements
+    const achievements = [
+      {
+        id: 1,
+        title: "First Steps",
+        description: "Complete your first lesson",
+        earned: completedProgress.length > 0,
+        date: completedProgress.length > 0 ? completedProgress[0].completedAt?.toISOString().split("T")[0] : null,
+      },
+      {
+        id: 2,
+        title: "Week Warrior",
+        description: "Maintain a 7-day streak",
+        earned: (user.streaks?.currentStreak || 0) >= 7,
+        date: (user.streaks?.currentStreak || 0) >= 7 ? new Date().toISOString().split("T")[0] : null,
+      },
+      {
+        id: 3,
+        title: "Quiz Master",
+        description: "Score 90%+ on 5 quizzes",
+        earned: completedProgress.filter((p) => (p.score || 0) >= 90).length >= 5,
+        date:
+          completedProgress.filter((p) => (p.score || 0) >= 90).length >= 5
+            ? new Date().toISOString().split("T")[0]
+            : null,
+      },
+      {
+        id: 4,
+        title: "Speed Learner",
+        description: "Complete 10 lessons in one day",
+        earned: false,
+        date: null,
+      },
+      {
+        id: 5,
+        title: "Perfect Score",
+        description: "Get 100% on any quiz",
+        earned: completedProgress.some((p) => p.score === 100),
+        date:
+          completedProgress
+            .find((p) => p.score === 100)
+            ?.completedAt?.toISOString()
+            .split("T")[0] || null,
+      },
+    ]
+
+    return {
+      overallStats: {
+        totalLessons,
+        completedLessons: completedProgress.length,
+        averageScore,
+        timeSpent: Math.round(totalTimeSpent / 60), // Convert to minutes
+        currentStreak: user.streaks?.currentStreak || 0,
+        longestStreak: user.streaks?.longestStreak || 0,
+      },
+      categoryProgress,
+      recentActivity,
+      achievements,
+    }
+  } catch (error) {
+    console.error("Error fetching progress data:", error)
+    return {
+      overallStats: {
+        totalLessons: 0,
+        completedLessons: 0,
+        averageScore: 0,
+        timeSpent: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+      },
+      categoryProgress: [],
+      recentActivity: [],
+      achievements: [],
+    }
   }
 }
 
 export default async function ProgressPage() {
-  const data = await getProgressData()
+  const { userId } = await auth()
+
+  if (!userId) {
+    redirect("/sign-in")
+  }
+
+  const data = await getProgressData(userId)
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Your Learning Progress</h1>
-        <p className="text-gray-600">Track your journey and celebrate your achievements</p>
+    <div className="progress-page animate-fade-in">
+      <div className="progress-header">
+        <h1>Your Learning Progress</h1>
+        <p>Track your journey and celebrate your achievements</p>
       </div>
 
       {/* Overall Stats */}
-      <div className="stats-grid mb-8">
+      <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{data.overallStats.completedLessons}</div>
           <div className="stat-label">Lessons Completed</div>
@@ -68,57 +223,59 @@ export default async function ProgressPage() {
         </div>
       </div>
 
-      <div className="grid grid-2 gap-6 mb-8">
+      <div className="progress-content">
         {/* Category Progress */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-xl font-semibold">Progress by Category</h3>
-          </div>
+        {data.categoryProgress.length > 0 && (
+          <div className="progress-card">
+            <div className="card-header">
+              <h3>Progress by Category</h3>
+            </div>
 
-          <div className="space-y-4">
-            {data.categoryProgress.map((category) => (
-              <div key={category.name}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">{category.name}</span>
-                  <div className="text-sm text-gray-500">
-                    {category.completed}/{category.total} • {category.avgScore}% avg
+            <div className="progress-list">
+              {data.categoryProgress.map((category) => (
+                <div key={category.name} className="progress-item">
+                  <div className="progress-info">
+                    <span className="progress-name">{category.name}</span>
+                    <div className="progress-details">
+                      {category.completed}/{category.total} • {category.avgScore}% avg
+                    </div>
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${(category.completed / category.total) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${(category.completed / category.total) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recent Activity */}
-        <div className="card">
+        <div className="activity-card">
           <div className="card-header">
-            <h3 className="text-xl font-semibold">Recent Activity</h3>
+            <h3>Recent Activity</h3>
           </div>
 
-          <div className="space-y-3">
+          <div className="activity-list">
             {data.recentActivity.map((day) => (
-              <div key={day.date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium">
+              <div key={day.date} className="activity-item">
+                <div className="activity-info">
+                  <div className="activity-date">
                     {new Date(day.date).toLocaleDateString("en-US", {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                     })}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="activity-details">
                     {day.lessonsCompleted} lessons • {day.timeSpent} min
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="activity-dots">
                   {Array.from({ length: Math.min(day.lessonsCompleted, 5) }).map((_, i) => (
-                    <div key={i} className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div key={i} className="activity-dot"></div>
                   ))}
                 </div>
               </div>
@@ -128,42 +285,33 @@ export default async function ProgressPage() {
       </div>
 
       {/* Achievements */}
-      <div className="card">
+      <div className="achievements-card">
         <div className="card-header">
-          <h3 className="text-xl font-semibold">Achievements</h3>
+          <h3>Achievements</h3>
         </div>
 
-        <div className="grid grid-3 gap-4">
+        <div className="achievements-grid">
           {data.achievements.map((achievement) => (
-            <div
-              key={achievement.id}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                achievement.earned ? "border-yellow-300 bg-yellow-50" : "border-gray-200 bg-gray-50 opacity-60"
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-3xl mb-2">{achievement.earned ? "🏆" : "🔒"}</div>
-                <h4 className="font-semibold mb-1">{achievement.title}</h4>
-                <p className="text-sm text-gray-600 mb-2">{achievement.description}</p>
-                {achievement.earned && achievement.date && (
-                  <p className="text-xs text-gray-500">Earned {new Date(achievement.date).toLocaleDateString()}</p>
-                )}
-              </div>
+            <div key={achievement.id} className={`achievement-item ${achievement.earned ? "earned" : "locked"}`}>
+              <div className="achievement-icon">{achievement.earned ? "🏆" : "🔒"}</div>
+              <h4 className="achievement-title">{achievement.title}</h4>
+              <p className="achievement-description">{achievement.description}</p>
+              {achievement.earned && achievement.date && (
+                <p className="achievement-date">Earned {new Date(achievement.date).toLocaleDateString()}</p>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-8 text-center">
-        <div className="flex gap-4 justify-center">
-          <Link href="/lessons" className="btn btn-primary">
-            Continue Learning
-          </Link>
-          <Link href="/dashboard" className="btn btn-secondary">
-            Back to Dashboard
-          </Link>
-        </div>
+      <div className="progress-actions">
+        <Link href="/lessons" className="btn btn-primary">
+          Continue Learning
+        </Link>
+        <Link href="/dashboard" className="btn btn-secondary">
+          Back to Dashboard
+        </Link>
       </div>
     </div>
   )

@@ -1,31 +1,46 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
-
-// Mock database - in a real app, you'd use Prisma with PostgreSQL
-const lessons = [
-  {
-    id: 1,
-    title: "JavaScript Basics",
-    description: "Learn the fundamentals of JavaScript programming",
-    content: "JavaScript is a versatile programming language...",
-    type: "text",
-    category: "Programming",
-    difficulty: "beginner",
-    duration: 5,
-    isPublished: true,
-    createdAt: new Date().toISOString(),
-  },
-]
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
-    return NextResponse.json({ lessons })
+    const { userId } = await auth()
+
+    const lessons = await prisma.lesson.findMany({
+      where: { isPublished: true },
+      include: {
+        category: true,
+        progress: userId
+          ? {
+              where: { userId },
+            }
+          : false,
+      },
+      orderBy: { createdAt: "desc" },
+    })
+
+    const formattedLessons = lessons.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      description: lesson.description,
+      content: lesson.content,
+      type: lesson.type,
+      category: lesson.category.name,
+      difficulty: lesson.difficulty,
+      duration: lesson.estimatedDuration,
+      isPublished: lesson.isPublished,
+      completed: userId ? lesson.progress.some((p) => p.completed) : false,
+      createdAt: lesson.createdAt.toISOString(),
+    }))
+
+    return NextResponse.json({ lessons: formattedLessons })
   } catch (error) {
+    console.error("Error fetching lessons:", error)
     return NextResponse.json({ error: "Failed to fetch lessons" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const { userId } = await auth()
 
@@ -34,25 +49,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, content, type, category, difficulty, duration } = body
+    const { title, description, content, type, categoryId, difficulty, duration } = body
 
-    const newLesson = {
-      id: lessons.length + 1,
-      title,
-      description,
-      content,
-      type,
-      category,
-      difficulty,
-      duration: Number.parseInt(duration),
-      isPublished: false,
-      createdAt: new Date().toISOString(),
-    }
-
-    lessons.push(newLesson)
+    const newLesson = await prisma.lesson.create({
+      data: {
+        title,
+        description,
+        content,
+        type: type.toUpperCase(),
+        categoryId: Number.parseInt(categoryId),
+        difficulty: difficulty.toUpperCase(),
+        estimatedDuration: Number.parseInt(duration),
+        slug: title.toLowerCase().replace(/\s+/g, "-"),
+        createdBy: userId,
+        isPublished: false,
+      },
+      include: {
+        category: true,
+      },
+    })
 
     return NextResponse.json({ lesson: newLesson }, { status: 201 })
   } catch (error) {
+    console.error("Error creating lesson:", error)
     return NextResponse.json({ error: "Failed to create lesson" }, { status: 500 })
   }
 }

@@ -1,21 +1,25 @@
 import { auth } from "@clerk/nextjs/server"
 
-export async function isAdmin(): Promise<boolean> {
-  try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return false
-    }
-
-    const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
-    return adminIds.includes(userId)
-  } catch (error) {
-    console.error("Error checking admin status:", error)
-    return false
-  }
+export function isAdmin(userId: string): boolean {
+  const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+  return adminIds.includes(userId)
 }
 
-export function getAdminIds(): string[] {
-  return process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+export async function requireAdmin() {
+  const { userId } = await auth()
+
+  if (!userId || !isAdmin(userId)) {
+    throw new Error("Unauthorized: Admin access required")
+  }
+
+  return userId
+}
+
+export async function checkAdminAccess(): Promise<boolean> {
+  try {
+    const { userId } = await auth()
+    return userId ? isAdmin(userId) : false
+  } catch {
+    return false
+  }
 }
