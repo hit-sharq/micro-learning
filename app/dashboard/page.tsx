@@ -1,121 +1,53 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import Link from "next/link"
 
-async function getDashboardData(userId: string) {
+async function getUserStats(userId: string) {
   try {
-    // Get user data
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      include: {
-        progress: {
-          include: {
-            lesson: {
-              include: {
-                category: true,
-              },
-            },
-          },
-        },
-        streaks: true,
-      },
-    })
+    const [user, totalProgress, recentLessons, achievements] = await Promise.all([
+      prisma.user.findUnique({
+        where: { clerkId: userId },
+        include: { _count: { select: { progress: true } } },
+      }),
+      prisma.progress.count({
+        where: { userId, completed: true },
+      }),
+      prisma.progress.findMany({
+        where: { userId },
+        take: 5,
+        orderBy: { updatedAt: "desc" },
+        include: { lesson: { select: { title: true, estimatedDuration: true } } },
+      }),
+      prisma.achievement.findMany({
+        where: { userId },
+        include: { achievement: true },
+        orderBy: { unlockedAt: "desc" },
+        take: 3,
+      }),
+    ])
 
-    if (!user) {
-      // Create user if doesn't exist
-      const newUser = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: "user@example.com", // This should come from Clerk
-          name: "User",
-        },
-      })
-
-      // Create initial streak
-      await prisma.userStreak.create({
-        data: {
-          userId: userId,
-          currentStreak: 0,
-          longestStreak: 0,
-        },
-      })
-
-      return {
-        user: {
-          name: newUser.name,
-          totalLessons: 0,
-          completedLessons: 0,
-          currentStreak: 0,
-          longestStreak: 0,
-        },
-        recentLessons: [],
-        categories: [],
-      }
-    }
-
-    const completedLessons = user.progress.filter((p) => p.completed).length
+    const currentStreak = user?.currentStreak || 0
     const totalLessons = await prisma.lesson.count({ where: { isPublished: true } })
-
-    // Get recent lessons
-    const recentLessons = user.progress.slice(-3).map((p) => ({
-      id: p.lesson.id,
-      title: p.lesson.title,
-      completed: p.completed,
-      score: p.score,
-    }))
-
-    // Get category progress
-    const categories = await prisma.category.findMany({
-      include: {
-        lessons: {
-          where: { isPublished: true },
-          include: {
-            progress: {
-              where: { userId: userId },
-            },
-          },
-        },
-      },
-    })
-
-    const categoryProgress = categories.map((category) => {
-      const totalCategoryLessons = category.lessons.length
-      const completedCategoryLessons = category.lessons.filter((lesson) =>
-        lesson.progress.some((p) => p.completed),
-      ).length
-
-      return {
-        id: category.id,
-        name: category.name,
-        progress: totalCategoryLessons > 0 ? Math.round((completedCategoryLessons / totalCategoryLessons) * 100) : 0,
-        color: category.color,
-      }
-    })
+    const completionRate = totalLessons > 0 ? Math.round((totalProgress / totalLessons) * 100) : 0
 
     return {
-      user: {
-        name: user.name,
-        totalLessons,
-        completedLessons,
-        currentStreak: user.streaks?.currentStreak || 0,
-        longestStreak: user.streaks?.longestStreak || 0,
-      },
+      totalProgress,
+      currentStreak,
+      completionRate,
       recentLessons,
-      categories: categoryProgress,
+      achievements,
+      dailyGoal: user?.dailyGoal || 1,
     }
   } catch (error) {
-    console.error("Error fetching dashboard data:", error)
+    console.error("Error fetching user stats:", error)
     return {
-      user: {
-        name: "User",
-        totalLessons: 0,
-        completedLessons: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-      },
+      totalProgress: 0,
+      currentStreak: 0,
+      completionRate: 0,
       recentLessons: [],
-      categories: [],
+      achievements: [],
+      dailyGoal: 1,
     }
   }
 }
@@ -127,111 +59,107 @@ export default async function DashboardPage() {
     redirect("/sign-in")
   }
 
-  const data = await getDashboardData(userId)
+  const stats = await getUserStats(userId)
 
   return (
-    <div className="dashboard-page animate-fade-in">
-      {/* Welcome Section */}
-      <div className="dashboard-header">
-        <h1>Welcome back, {data.user.name}! 👋</h1>
-        <p>Ready to continue your learning journey?</p>
+    <div className="animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
+        <p className="text-gray-600">Continue your learning journey</p>
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{data.user.completedLessons}</div>
+          <div className="stat-value">{stats.totalProgress}</div>
           <div className="stat-label">Lessons Completed</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data.user.currentStreak}</div>
-          <div className="stat-label">Day Streak 🔥</div>
+          <div className="stat-value">{stats.currentStreak}</div>
+          <div className="stat-label">Day Streak</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">
-            {data.user.totalLessons > 0 ? Math.round((data.user.completedLessons / data.user.totalLessons) * 100) : 0}%
-          </div>
-          <div className="stat-label">Overall Progress</div>
+          <div className="stat-value">{stats.completionRate}%</div>
+          <div className="stat-label">Completion Rate</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data.user.longestStreak}</div>
-          <div className="stat-label">Longest Streak</div>
+          <div className="stat-value">{stats.achievements.length}</div>
+          <div className="stat-label">Achievements</div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="dashboard-actions">
-        <div className="action-card">
-          <h3>Continue Learning</h3>
-          <p>Pick up where you left off</p>
-          <Link href="/lessons" className="btn btn-primary">
-            Browse Lessons
-          </Link>
-        </div>
+      <div className="grid grid-3 gap-6 mb-8">
+        <Link href="/lessons" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📚</div>
+            <h3 className="text-lg font-semibold mb-2">Browse Lessons</h3>
+            <p className="text-gray-600 text-sm">Discover new topics to learn</p>
+          </div>
+        </Link>
 
-        <div className="action-card">
-          <h3>Daily Challenge</h3>
-          <p>Complete today's challenge to maintain your streak</p>
-          <Link href="/challenge" className="btn btn-success">
-            Take Challenge
-          </Link>
-        </div>
+        <Link href="/progress" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📈</div>
+            <h3 className="text-lg font-semibold mb-2">View Progress</h3>
+            <p className="text-gray-600 text-sm">Track your learning journey</p>
+          </div>
+        </Link>
+
+        <Link href="/achievements" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">🏆</div>
+            <h3 className="text-lg font-semibold mb-2">Achievements</h3>
+            <p className="text-gray-600 text-sm">See your accomplishments</p>
+          </div>
+        </Link>
       </div>
 
-      {/* Progress by Category */}
-      {data.categories.length > 0 && (
-        <div className="progress-card">
+      <div className="grid grid-2 gap-6">
+        {/* Recent Activity */}
+        <div className="card">
           <div className="card-header">
-            <h3>Learning Progress</h3>
+            <h3 className="text-xl font-semibold">Recent Activity</h3>
           </div>
-
-          <div className="progress-list">
-            {data.categories.map((category) => (
-              <div key={category.id} className="progress-item">
-                <div className="progress-info">
-                  <span className="progress-name">{category.name}</span>
-                  <span className="progress-percent">{category.progress}%</span>
+          <div className="space-y-4">
+            {stats.recentLessons.length > 0 ? (
+              stats.recentLessons.map((progress, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{progress.lesson.title}</div>
+                    <div className="text-sm text-gray-600">{progress.completed ? "Completed" : "In Progress"}</div>
+                  </div>
+                  <div className="text-sm text-gray-500">{progress.lesson.estimatedDuration} min</div>
                 </div>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${category.progress}%`,
-                      background: `linear-gradient(90deg, ${category.color}, ${category.color}aa)`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">No recent activity</p>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Recent Activity */}
-      {data.recentLessons.length > 0 && (
-        <div className="recent-card">
+        {/* Recent Achievements */}
+        <div className="card">
           <div className="card-header">
-            <h3>Recent Lessons</h3>
+            <h3 className="text-xl font-semibold">Recent Achievements</h3>
           </div>
-
-          <div className="recent-list">
-            {data.recentLessons.map((lesson) => (
-              <div key={lesson.id} className="recent-item">
-                <div className="recent-info">
-                  <div className={`recent-status ${lesson.completed ? "completed" : "pending"}`}></div>
-                  <span className="recent-title">{lesson.title}</span>
+          <div className="space-y-4">
+            {stats.achievements.length > 0 ? (
+              stats.achievements.map((userAchievement, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="text-2xl">{userAchievement.achievement.icon}</div>
+                  <div>
+                    <div className="font-medium">{userAchievement.achievement.title}</div>
+                    <div className="text-sm text-gray-600">{userAchievement.achievement.description}</div>
+                  </div>
                 </div>
-                <div className="recent-actions">
-                  {lesson.completed && lesson.score && <span className="badge badge-success">{lesson.score}%</span>}
-                  <Link href={`/lessons/${lesson.id}`} className="btn btn-secondary btn-sm">
-                    {lesson.completed ? "Review" : "Continue"}
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">No achievements yet</p>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -1,214 +1,138 @@
+import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { isAdmin } from "@/lib/admin"
-import { auth } from "@clerk/nextjs/server"
-import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+import Link from "next/link"
 
 async function getAdminStats() {
   try {
-    const [
-      totalUsers,
-      activeUsers,
-      totalLessons,
-      publishedLessons,
-      totalProgress,
-      completedLessons,
-      totalStreaks,
-      activeStreaks,
-    ] = await Promise.all([
+    const [totalUsers, totalLessons, totalProgress, recentActivity] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({
-        where: {
-          lastLoginAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-          },
-        },
-      }),
       prisma.lesson.count(),
-      prisma.lesson.count({ where: { isPublished: true } }),
-      prisma.userProgress.count(),
-      prisma.userProgress.count({ where: { completed: true } }),
-      prisma.userStreak.count(),
-      prisma.userStreak.count({
-        where: {
-          currentStreak: {
-            gt: 0,
-          },
+      prisma.progress.count({ where: { completed: true } }),
+      prisma.progress.findMany({
+        take: 5,
+        orderBy: { updatedAt: "desc" },
+        include: {
+          user: { select: { name: true, email: true } },
+          lesson: { select: { title: true } },
         },
       }),
     ])
 
     return {
       totalUsers,
-      activeUsers,
       totalLessons,
-      publishedLessons,
       totalProgress,
-      completedLessons,
-      totalStreaks,
-      activeStreaks,
+      recentActivity,
     }
   } catch (error) {
     console.error("Error fetching admin stats:", error)
     return {
       totalUsers: 0,
-      activeUsers: 0,
       totalLessons: 0,
-      publishedLessons: 0,
       totalProgress: 0,
-      completedLessons: 0,
-      totalStreaks: 0,
-      activeStreaks: 0,
+      recentActivity: [],
     }
   }
 }
 
-export default async function AdminDashboard() {
+export default async function AdminPage() {
   const { userId } = await auth()
 
-  if (!userId || !isAdmin(userId)) {
+  if (!userId) {
+    redirect("/sign-in")
+  }
+
+  const userIsAdmin = await isAdmin()
+
+  if (!userIsAdmin) {
     redirect("/dashboard")
   }
 
   const stats = await getAdminStats()
 
   return (
-    <div className="admin-dashboard animate-fade-in">
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
-        <p>Manage content, users, and platform analytics</p>
+    <div className="animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+        <p className="text-gray-600">Manage your microlearning platform</p>
       </div>
 
-      {/* Quick Stats */}
+      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{stats.totalUsers}</div>
           <div className="stat-label">Total Users</div>
-          <div className="stat-sub">{stats.activeUsers} active this week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{stats.publishedLessons}</div>
-          <div className="stat-label">Published Lessons</div>
-          <div className="stat-sub">{stats.totalLessons - stats.publishedLessons} drafts</div>
+          <div className="stat-value">{stats.totalLessons}</div>
+          <div className="stat-label">Total Lessons</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{stats.completedLessons}</div>
-          <div className="stat-label">Lessons Completed</div>
-          <div className="stat-sub">
-            {Math.round((stats.completedLessons / Math.max(stats.totalProgress, 1)) * 100)}% completion rate
-          </div>
+          <div className="stat-value">{stats.totalProgress}</div>
+          <div className="stat-label">Completed Lessons</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{stats.activeStreaks}</div>
-          <div className="stat-label">Active Streaks</div>
-          <div className="stat-sub">{stats.totalStreaks} total users with streaks</div>
+          <div className="stat-value">{Math.round((stats.totalProgress / (stats.totalUsers || 1)) * 100) / 100}</div>
+          <div className="stat-label">Avg. Completion Rate</div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="admin-actions">
-        <Link href="/admin/content" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">📚</div>
-            <h3>Content Management</h3>
-            <p>Create, edit, and manage lessons</p>
+      {/* Admin Actions */}
+      <div className="grid grid-2 gap-6 mb-8">
+        <Link href="/admin/content" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📚</div>
+            <h3 className="text-xl font-semibold mb-2">Content Management</h3>
+            <p className="text-gray-600">Create and manage lessons, categories, and content</p>
           </div>
         </Link>
 
-        <Link href="/admin/users" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">👥</div>
-            <h3>User Management</h3>
-            <p>Monitor users and their progress</p>
+        <Link href="/admin/users" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">👥</div>
+            <h3 className="text-xl font-semibold mb-2">User Management</h3>
+            <p className="text-gray-600">View and manage user accounts and progress</p>
           </div>
         </Link>
 
-        <Link href="/admin/analytics" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">📊</div>
-            <h3>Analytics</h3>
-            <p>View detailed platform statistics</p>
+        <Link href="/admin/analytics" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📊</div>
+            <h3 className="text-xl font-semibold mb-2">Analytics</h3>
+            <p className="text-gray-600">View detailed platform analytics and insights</p>
           </div>
         </Link>
 
-        <Link href="/admin/announcements" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">📢</div>
-            <h3>Announcements</h3>
-            <p>Create and manage announcements</p>
-          </div>
-        </Link>
-
-        <Link href="/admin/reports" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">🚨</div>
-            <h3>Content Reports</h3>
-            <p>Review flagged content</p>
-          </div>
-        </Link>
-
-        <Link href="/admin/categories" className="admin-card">
-          <div className="admin-card-content">
-            <div className="admin-card-icon">🏷️</div>
-            <h3>Categories</h3>
-            <p>Manage lesson categories</p>
+        <Link href="/admin/announcements" className="card hover:shadow-lg transition-all duration-300">
+          <div className="text-center">
+            <div className="text-4xl mb-4">📢</div>
+            <h3 className="text-xl font-semibold mb-2">Announcements</h3>
+            <p className="text-gray-600">Create and manage platform announcements</p>
           </div>
         </Link>
       </div>
 
       {/* Recent Activity */}
-      <div className="admin-activity">
-        <div className="activity-card">
-          <div className="card-header">
-            <h3>Recent User Activity</h3>
-          </div>
-          <div className="activity-list">
-            <div className="activity-item">
-              <div className="activity-info">
-                <div className="activity-title">New user registrations</div>
-                <div className="activity-subtitle">Last 24 hours</div>
-              </div>
-              <div className="activity-value success">+12</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-info">
-                <div className="activity-title">Lessons completed</div>
-                <div className="activity-subtitle">Today</div>
-              </div>
-              <div className="activity-value primary">247</div>
-            </div>
-            <div className="activity-item">
-              <div className="activity-info">
-                <div className="activity-title">Active streaks</div>
-                <div className="activity-subtitle">Current</div>
-              </div>
-              <div className="activity-value warning">{stats.activeStreaks}</div>
-            </div>
-          </div>
+      <div className="card">
+        <div className="card-header">
+          <h3 className="text-xl font-semibold">Recent Activity</h3>
         </div>
-
-        <div className="activity-card">
-          <div className="card-header">
-            <h3>System Status</h3>
-          </div>
-          <div className="status-list">
-            <div className="status-item">
-              <span>Database Connection</span>
-              <span className="badge badge-success">✓ Healthy</span>
-            </div>
-            <div className="status-item">
-              <span>Video Streaming</span>
-              <span className="badge badge-success">✓ Operational</span>
-            </div>
-            <div className="status-item">
-              <span>Email Service</span>
-              <span className="badge badge-success">✓ Active</span>
-            </div>
-            <div className="status-item">
-              <span>Storage Usage</span>
-              <span className="badge badge-warning">⚠ 78% Full</span>
-            </div>
-          </div>
+        <div className="space-y-4">
+          {stats.recentActivity.length > 0 ? (
+            stats.recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-medium">{activity.user.name || activity.user.email}</div>
+                  <div className="text-sm text-gray-600">Completed: {activity.lesson.title}</div>
+                </div>
+                <div className="text-sm text-gray-500">{new Date(activity.updatedAt).toLocaleDateString()}</div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-center py-8">No recent activity</p>
+          )}
         </div>
       </div>
     </div>

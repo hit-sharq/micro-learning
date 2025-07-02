@@ -1,4 +1,3 @@
-"use client"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { LessonsClient } from "./lessons-client"
