@@ -1,23 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { CheckCircle, XCircle, Clock, Lightbulb, ArrowRight } from "lucide-react"
 
-interface QuizQuestion {
+interface Question {
   id: string
-  type: "multiple-choice" | "true-false" | "fill-blank" | "drag-drop"
+  type: "multiple-choice" | "true-false" | "fill-blank"
   question: string
   options?: string[]
-  correctAnswer: string | number | string[]
+  correctAnswer: number | string
   explanation?: string
   hint?: string
-  timeLimit?: number // seconds
   points: number
 }
 
 interface AdvancedQuizProps {
-  questions: QuizQuestion[]
+  questions: Question[]
   onComplete: (score: number, answers: Record<string, any>) => void
-  timeLimit?: number // total quiz time limit in seconds
+  timeLimit?: number
   showHints?: boolean
   showExplanations?: boolean
 }
@@ -29,73 +29,41 @@ export function AdvancedQuiz({
   showHints = true,
   showExplanations = true,
 }: AdvancedQuizProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
-  const [showHint, setShowHint] = useState<Record<string, boolean>>({})
-  const [timeRemaining, setTimeRemaining] = useState(timeLimit)
-  const [questionTimeRemaining, setQuestionTimeRemaining] = useState<number | null>(null)
+  const [showHint, setShowHint] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(timeLimit || 0)
   const [isCompleted, setIsCompleted] = useState(false)
   const [showResults, setShowResults] = useState(false)
 
-  const currentQuestion = questions[currentQuestionIndex]
-
-  // Timer effects
   useEffect(() => {
-    if (timeLimit && timeRemaining && timeRemaining > 0 && !isCompleted) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1)
-      }, 1000)
+    if (timeLimit && timeLeft > 0 && !isCompleted) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
       return () => clearTimeout(timer)
-    } else if (timeRemaining === 0) {
-      handleQuizComplete()
+    } else if (timeLeft === 0 && timeLimit) {
+      handleComplete()
     }
-  }, [timeRemaining, timeLimit, isCompleted])
+  }, [timeLeft, timeLimit, isCompleted])
 
-  useEffect(() => {
-    if (currentQuestion?.timeLimit) {
-      setQuestionTimeRemaining(currentQuestion.timeLimit)
-    }
-  }, [currentQuestionIndex, currentQuestion])
-
-  useEffect(() => {
-    if (questionTimeRemaining && questionTimeRemaining > 0 && !isCompleted) {
-      const timer = setTimeout(() => {
-        setQuestionTimeRemaining(questionTimeRemaining - 1)
-      }, 1000)
-      return () => clearTimeout(timer)
-    } else if (questionTimeRemaining === 0) {
-      handleNextQuestion()
-    }
-  }, [questionTimeRemaining, isCompleted])
-
-  const handleAnswerChange = (questionId: string, answer: any) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: answer,
-    }))
+  const handleAnswer = (questionId: string, answer: any) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }))
   }
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-      setQuestionTimeRemaining(questions[currentQuestionIndex + 1]?.timeLimit || null)
+  const handleNext = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1)
+      setShowHint(false)
     } else {
-      handleQuizComplete()
+      handleComplete()
     }
   }
 
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
-      setQuestionTimeRemaining(questions[currentQuestionIndex - 1]?.timeLimit || null)
-    }
-  }
-
-  const handleQuizComplete = () => {
+  const handleComplete = () => {
     setIsCompleted(true)
+    setShowResults(true)
+
     const score = calculateScore()
     onComplete(score, answers)
-    setShowResults(true)
   }
 
   const calculateScore = () => {
@@ -106,35 +74,19 @@ export function AdvancedQuiz({
       totalPoints += question.points
       const userAnswer = answers[question.id]
 
-      if (isAnswerCorrect(question, userAnswer)) {
+      if (question.type === "multiple-choice" && userAnswer === question.correctAnswer) {
+        earnedPoints += question.points
+      } else if (question.type === "true-false" && userAnswer === question.correctAnswer) {
+        earnedPoints += question.points
+      } else if (
+        question.type === "fill-blank" &&
+        userAnswer?.toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim()
+      ) {
         earnedPoints += question.points
       }
     })
 
-    return totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
-  }
-
-  const isAnswerCorrect = (question: QuizQuestion, userAnswer: any) => {
-    if (!userAnswer) return false
-
-    switch (question.type) {
-      case "multiple-choice":
-      case "true-false":
-        return userAnswer === question.correctAnswer
-      case "fill-blank":
-        return userAnswer.toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim()
-      case "drag-drop":
-        return JSON.stringify(userAnswer.sort()) === JSON.stringify(question.correctAnswer)
-      default:
-        return false
-    }
-  }
-
-  const toggleHint = (questionId: string) => {
-    setShowHint((prev) => ({
-      ...prev,
-      [questionId]: !prev[questionId],
-    }))
+    return Math.round((earnedPoints / totalPoints) * 100)
   }
 
   const formatTime = (seconds: number) => {
@@ -143,66 +95,60 @@ export function AdvancedQuiz({
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  const currentQ = questions[currentQuestion]
+  const progress = ((currentQuestion + 1) / questions.length) * 100
+
   if (showResults) {
     const score = calculateScore()
     return (
-      <div className="card max-w-4xl mx-auto">
+      <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-100 max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">
-            {score >= 90 ? "🏆" : score >= 80 ? "🎉" : score >= 70 ? "👍" : score >= 60 ? "📚" : "💪"}
+          <div
+            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              score >= 80 ? "bg-green-100" : score >= 60 ? "bg-yellow-100" : "bg-red-100"
+            }`}
+          >
+            {score >= 80 ? (
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            ) : (
+              <XCircle className="w-10 h-10 text-red-600" />
+            )}
           </div>
-          <h2 className="text-3xl font-bold mb-2">Quiz Complete!</h2>
-          <p className="text-xl text-gray-600">You scored {score}%</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Quiz Complete!</h2>
+          <p className="text-xl text-gray-600">Your Score: {score}%</p>
         </div>
 
         {showExplanations && (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold mb-4">Review Your Answers</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Review Answers</h3>
             {questions.map((question, index) => {
               const userAnswer = answers[question.id]
-              const isCorrect = isAnswerCorrect(question, userAnswer)
+              const isCorrect =
+                question.type === "multiple-choice"
+                  ? userAnswer === question.correctAnswer
+                  : question.type === "true-false"
+                    ? userAnswer === question.correctAnswer
+                    : userAnswer?.toLowerCase().trim() === question.correctAnswer.toString().toLowerCase().trim()
 
               return (
-                <div key={question.id} className="border rounded-lg p-4">
-                  <div className="flex items-start gap-3 mb-3">
-                    <span
-                      className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
-                        isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                <div key={question.id} className="border border-gray-200 rounded-xl p-6">
+                  <div className="flex items-start space-x-3 mb-4">
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        isCorrect ? "bg-green-100" : "bg-red-100"
                       }`}
                     >
-                      {index + 1}
-                    </span>
+                      {isCorrect ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-600" />
+                      )}
+                    </div>
                     <div className="flex-1">
-                      <p className="font-medium mb-2">{question.question}</p>
-
-                      {question.type === "multiple-choice" && (
-                        <div className="space-y-2">
-                          {question.options?.map((option, optIndex) => (
-                            <div
-                              key={optIndex}
-                              className={`p-2 rounded ${
-                                optIndex === question.correctAnswer
-                                  ? "bg-green-100 text-green-800"
-                                  : optIndex === userAnswer
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-50"
-                              }`}
-                            >
-                              {option}
-                              {optIndex === question.correctAnswer && " ✓"}
-                              {optIndex === userAnswer && optIndex !== question.correctAnswer && " ✗"}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {question.explanation && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                          <p className="text-sm text-blue-800">
-                            <strong>Explanation:</strong> {question.explanation}
-                          </p>
-                        </div>
-                      )}
+                      <h4 className="font-semibold text-gray-900 mb-2">
+                        Question {index + 1}: {question.question}
+                      </h4>
+                      {question.explanation && <p className="text-gray-600 text-sm">{question.explanation}</p>}
                     </div>
                   </div>
                 </div>
@@ -215,76 +161,59 @@ export function AdvancedQuiz({
   }
 
   return (
-    <div className="card max-w-4xl mx-auto">
-      {/* Header with timers */}
-      <div className="flex justify-between items-center mb-6 pb-4 border-b">
+    <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-100 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-xl font-semibold">
-            Question {currentQuestionIndex + 1} of {questions.length}
+          <h2 className="text-2xl font-bold text-gray-900">
+            Question {currentQuestion + 1} of {questions.length}
           </h2>
-          <div className="text-sm text-gray-500 mt-1">
-            {currentQuestion.points} point{currentQuestion.points !== 1 ? "s" : ""}
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
-
-        <div className="flex gap-4 text-sm">
-          {timeLimit && timeRemaining && (
-            <div
-              className={`px-3 py-1 rounded-full ${
-                timeRemaining < 60 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"
-              }`}
-            >
-              Total: {formatTime(timeRemaining)}
-            </div>
-          )}
-          {questionTimeRemaining && (
-            <div
-              className={`px-3 py-1 rounded-full ${
-                questionTimeRemaining < 10 ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
-              }`}
-            >
-              Question: {formatTime(questionTimeRemaining)}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-          />
-        </div>
+        {timeLimit && (
+          <div className="flex items-center space-x-2 text-gray-600">
+            <Clock className="w-5 h-5" />
+            <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+          </div>
+        )}
       </div>
 
       {/* Question */}
       <div className="mb-8">
-        <h3 className="text-lg font-medium mb-6">{currentQuestion.question}</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-6">{currentQ.question}</h3>
 
         {/* Multiple Choice */}
-        {currentQuestion.type === "multiple-choice" && (
+        {currentQ.type === "multiple-choice" && currentQ.options && (
           <div className="space-y-3">
-            {currentQuestion.options?.map((option, index) => (
-              <label key={index} className="quiz-option cursor-pointer">
+            {currentQ.options.map((option, index) => (
+              <label
+                key={index}
+                className={`block p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
+                  answers[currentQ.id] === index ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                }`}
+              >
                 <input
                   type="radio"
-                  name={currentQuestion.id}
+                  name={currentQ.id}
                   value={index}
-                  checked={answers[currentQuestion.id] === index}
-                  onChange={(e) => handleAnswerChange(currentQuestion.id, Number.parseInt(e.target.value))}
+                  checked={answers[currentQ.id] === index}
+                  onChange={() => handleAnswer(currentQ.id, index)}
                   className="sr-only"
                 />
-                <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-3">
                   <div
-                    className={`w-4 h-4 rounded-full border-2 ${
-                      answers[currentQuestion.id] === index ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      answers[currentQ.id] === index ? "border-blue-500 bg-blue-500" : "border-gray-300"
                     }`}
                   >
-                    {answers[currentQuestion.id] === index && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                    {answers[currentQ.id] === index && <div className="w-2 h-2 bg-white rounded-full" />}
                   </div>
-                  <span>{option}</span>
+                  <span className="text-gray-900">{option}</span>
                 </div>
               </label>
             ))}
@@ -292,91 +221,82 @@ export function AdvancedQuiz({
         )}
 
         {/* True/False */}
-        {currentQuestion.type === "true-false" && (
+        {currentQ.type === "true-false" && (
           <div className="space-y-3">
-            {["True", "False"].map((option, index) => (
-              <label key={index} className="quiz-option cursor-pointer">
+            {[true, false].map((option, index) => (
+              <label
+                key={index}
+                className={`block p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
+                  answers[currentQ.id] === index ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                }`}
+              >
                 <input
                   type="radio"
-                  name={currentQuestion.id}
+                  name={currentQ.id}
                   value={index}
-                  checked={answers[currentQuestion.id] === index}
-                  onChange={(e) => handleAnswerChange(currentQuestion.id, Number.parseInt(e.target.value))}
+                  checked={answers[currentQ.id] === index}
+                  onChange={() => handleAnswer(currentQ.id, index)}
                   className="sr-only"
                 />
-                <div className="flex items-center gap-3">
+                <div className="flex items-center space-x-3">
                   <div
-                    className={`w-4 h-4 rounded-full border-2 ${
-                      answers[currentQuestion.id] === index ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      answers[currentQ.id] === index ? "border-blue-500 bg-blue-500" : "border-gray-300"
                     }`}
                   >
-                    {answers[currentQuestion.id] === index && <div className="w-2 h-2 bg-white rounded-full m-0.5" />}
+                    {answers[currentQ.id] === index && <div className="w-2 h-2 bg-white rounded-full" />}
                   </div>
-                  <span>{option}</span>
+                  <span className="text-gray-900">{option ? "True" : "False"}</span>
                 </div>
               </label>
             ))}
           </div>
         )}
 
-        {/* Fill in the blank */}
-        {currentQuestion.type === "fill-blank" && (
-          <div>
-            <input
-              type="text"
-              className="form-input w-full max-w-md"
-              placeholder="Type your answer here..."
-              value={answers[currentQuestion.id] || ""}
-              onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Hint */}
-        {showHints && currentQuestion.hint && (
-          <div className="mt-4">
-            <button onClick={() => toggleHint(currentQuestion.id)} className="btn btn-secondary btn-sm">
-              {showHint[currentQuestion.id] ? "Hide Hint" : "Show Hint"} 💡
-            </button>
-            {showHint[currentQuestion.id] && (
-              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">{currentQuestion.hint}</p>
-              </div>
-            )}
-          </div>
+        {/* Fill in the Blank */}
+        {currentQ.type === "fill-blank" && (
+          <input
+            type="text"
+            value={answers[currentQ.id] || ""}
+            onChange={(e) => handleAnswer(currentQ.id, e.target.value)}
+            placeholder="Type your answer here..."
+            className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+          />
         )}
       </div>
 
+      {/* Hint */}
+      {showHints && currentQ.hint && (
+        <div className="mb-6">
+          {!showHint ? (
+            <button
+              onClick={() => setShowHint(true)}
+              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <Lightbulb className="w-4 h-4" />
+              <span>Show Hint</span>
+            </button>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <div className="flex items-start space-x-2">
+                <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <p className="text-yellow-800">{currentQ.hint}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex justify-between items-center">
-        <button onClick={handlePreviousQuestion} disabled={currentQuestionIndex === 0} className="btn btn-secondary">
-          ← Previous
-        </button>
-
-        <div className="flex gap-2">
-          {questions.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentQuestionIndex(index)}
-              className={`w-8 h-8 rounded-full text-sm font-medium ${
-                index === currentQuestionIndex
-                  ? "bg-blue-500 text-white"
-                  : answers[questions[index].id] !== undefined
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              {index + 1}
-            </button>
-          ))}
-        </div>
-
+        <div className="text-sm text-gray-500">Points: {currentQ.points}</div>
         <button
-          onClick={currentQuestionIndex === questions.length - 1 ? handleQuizComplete : handleNextQuestion}
-          disabled={answers[currentQuestion.id] === undefined}
-          className="btn btn-primary"
+          onClick={handleNext}
+          disabled={!answers[currentQ.id]}
+          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          {currentQuestionIndex === questions.length - 1 ? "Finish Quiz" : "Next →"}
+          <span>{currentQuestion === questions.length - 1 ? "Complete Quiz" : "Next Question"}</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>

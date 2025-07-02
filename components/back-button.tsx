@@ -21,11 +21,12 @@ export function BackButton({ href, label = "Back", className = "", variant = "gh
     }
   }
 
-  const baseClasses = "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+  const baseClasses =
+    "inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
   const variantClasses = {
-    default: "bg-blue-600 text-white hover:bg-blue-700",
+    default: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl",
     ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
+    outline: "border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400",
   }
 
   return (
