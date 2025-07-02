@@ -1,18 +1,29 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/lessons(.*)",
-  "/progress(.*)",
-  "/achievements(.*)",
-  "/bookmarks(.*)",
-  "/profile(.*)",
-  "/admin(.*)",
-])
+const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"])
+
+const isAdminRoute = createRouteMatcher(["/admin(.*)"])
 
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect()
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return
+  }
+
+  // Protect all other routes
+  const { userId } = await auth()
+
+  if (!userId) {
+    return auth().redirectToSignIn()
+  }
+
+  // Check admin routes
+  if (isAdminRoute(req)) {
+    const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+
+    if (!adminIds.includes(userId)) {
+      return Response.redirect(new URL("/dashboard", req.url))
+    }
   }
 })
 

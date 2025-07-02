@@ -1,6 +1,7 @@
 import type React from "react"
-import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
+import { auth } from "@clerk/nextjs/server"
+import Link from "next/link"
 import { isAdmin } from "@/lib/admin"
 
 export default async function DashboardLayout({
@@ -8,16 +9,19 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const { userId } = await auth()
   const userIsAdmin = await isAdmin()
+
+  if (!userId) {
+    return null
+  }
 
   return (
     <div className="dashboard-layout">
       <nav className="dashboard-nav">
-        <div className="nav-brand">
-          <Link href="/dashboard">
-            <h2>Microlearning Coach</h2>
-          </Link>
-        </div>
+        <Link href="/dashboard" className="nav-brand">
+          <h2>Microlearning Coach</h2>
+        </Link>
 
         <div className="nav-links">
           <Link href="/dashboard" className="nav-link">
@@ -29,25 +33,15 @@ export default async function DashboardLayout({
           <Link href="/progress" className="nav-link">
             Progress
           </Link>
-          <Link href="/achievements" className="nav-link">
-            Achievements
-          </Link>
-          <Link href="/bookmarks" className="nav-link">
-            Bookmarks
-          </Link>
           <Link href="/profile" className="nav-link">
             Profile
           </Link>
-
           {userIsAdmin && (
             <Link href="/admin" className="nav-link admin-link">
               Admin Panel
             </Link>
           )}
-        </div>
-
-        <div className="nav-user">
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         </div>
       </nav>
 

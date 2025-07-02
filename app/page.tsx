@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 export default async function HomePage() {
   const { userId } = await auth()
 
+  // Redirect authenticated users to dashboard
   if (userId) {
     redirect("/dashboard")
   }
@@ -31,16 +32,15 @@ export default async function HomePage() {
         <section className="hero-section">
           <div className="hero-content">
             <h1 className="hero-title">
-              Master New Skills with
-              <span className="hero-highlight"> Microlearning</span>
+              Master Skills with <span className="hero-highlight">Bite-Sized</span> Learning
             </h1>
             <p className="hero-description">
-              Learn efficiently with bite-sized lessons, track your progress, and achieve your goals with our
-              personalized coaching platform.
+              Transform your learning journey with personalized, micro-lessons designed to fit your busy schedule and
+              learning style.
             </p>
             <div className="hero-actions">
               <Link href="/sign-up" className="btn btn-primary btn-large">
-                Start Learning Today
+                Start Learning Free
               </Link>
               <Link href="/sign-in" className="btn btn-secondary btn-large">
                 Sign In
@@ -54,24 +54,34 @@ export default async function HomePage() {
             <h2 className="section-title">Why Choose Microlearning Coach?</h2>
             <div className="features-grid">
               <div className="feature-card">
-                <div className="feature-icon">📚</div>
-                <h3>Bite-sized Lessons</h3>
-                <p>Learn complex topics through short, focused lessons that fit into your busy schedule.</p>
+                <div className="feature-icon">🎯</div>
+                <h3>Personalized Learning</h3>
+                <p>AI-powered recommendations tailored to your learning style, pace, and goals.</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">⚡</div>
+                <h3>Bite-Sized Lessons</h3>
+                <p>Learn in 5-10 minute sessions that fit perfectly into your busy schedule.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">📊</div>
                 <h3>Progress Tracking</h3>
-                <p>Monitor your learning journey with detailed analytics and achievement badges.</p>
+                <p>Visual progress tracking with streaks, achievements, and detailed analytics.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">🎯</div>
-                <h3>Personalized Learning</h3>
-                <p>Get customized lesson recommendations based on your goals and learning style.</p>
+                <div className="feature-icon">🎮</div>
+                <h3>Gamified Experience</h3>
+                <p>Earn points, unlock achievements, and compete with friends to stay motivated.</p>
               </div>
               <div className="feature-card">
-                <div className="feature-icon">🏆</div>
-                <h3>Achievement System</h3>
-                <p>Stay motivated with our gamified learning experience and unlock rewards.</p>
+                <div className="feature-icon">📱</div>
+                <h3>Multi-Device Sync</h3>
+                <p>Learn anywhere, anytime with seamless synchronization across all devices.</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🧠</div>
+                <h3>Spaced Repetition</h3>
+                <p>Scientifically-proven learning techniques to maximize retention and recall.</p>
               </div>
             </div>
           </div>

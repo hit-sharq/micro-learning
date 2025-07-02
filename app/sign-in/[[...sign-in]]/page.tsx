@@ -11,7 +11,7 @@ export default function SignInPage() {
         <SignIn
           appearance={{
             elements: {
-              formButtonPrimary: "auth-button",
+              formButtonPrimary: "btn btn-primary",
               card: "auth-card",
               headerTitle: "auth-title",
               headerSubtitle: "auth-subtitle",

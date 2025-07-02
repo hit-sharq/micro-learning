@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 import { SearchAndFilter } from "@/components/search-and-filter"
 
@@ -17,7 +17,6 @@ interface Lesson {
   tags: string[]
 }
 
-// Move the lessons data to component state
 const allLessons: Lesson[] = [
   {
     id: 1,
@@ -97,39 +96,36 @@ export default function LessonsPage() {
   const [filteredLessons, setFilteredLessons] = useState<Lesson[]>(allLessons)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleFilter = (lessons: Lesson[]) => {
+  // Use useCallback to prevent the function from changing on every render
+  const handleFilter = useCallback((lessons: Lesson[]) => {
     setFilteredLessons(lessons)
-  }
+  }, [])
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Browse Lessons</h1>
-        <p className="text-gray-600">Discover bite-sized lessons tailored to your learning goals</p>
+    <div className="lessons-page animate-fade-in">
+      <div className="lessons-header">
+        <h1>Browse Lessons</h1>
+        <p>Discover bite-sized lessons tailored to your learning goals</p>
       </div>
 
-      {/* Search and Filter Component */}
       <SearchAndFilter lessons={allLessons} onFilter={handleFilter} />
 
-      {/* Results Count */}
-      <div className="mb-4 text-sm text-gray-600">
+      <div className="lessons-count">
         Showing {filteredLessons.length} of {allLessons.length} lessons
       </div>
 
-      {/* Lessons Grid */}
       {isLoading ? (
-        <div className="grid grid-3 gap-6">
+        <div className="lessons-grid">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="lesson-skeleton h-64"></div>
+            <div key={index} className="lesson-skeleton"></div>
           ))}
         </div>
       ) : filteredLessons.length > 0 ? (
-        <div className="grid grid-3 gap-6">
+        <div className="lessons-grid">
           {filteredLessons.map((lesson) => (
-            <div key={lesson.id} className="card hover:shadow-lg transition-all duration-300 relative">
-              {/* Bookmark Button */}
+            <div key={lesson.id} className="lesson-card">
               <button className="bookmark-btn">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -139,8 +135,8 @@ export default function LessonsPage() {
                 </svg>
               </button>
 
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
+              <div className="lesson-header">
+                <div className="lesson-badges">
                   <span
                     className="badge"
                     style={{
@@ -152,30 +148,27 @@ export default function LessonsPage() {
                   </span>
                   {lesson.completed && <span className="badge badge-success">✓ Completed</span>}
                 </div>
-                <div className="text-2xl">
+                <div className="lesson-type">
                   {lesson.type === "text" && "📄"}
                   {lesson.type === "video" && "🎥"}
                   {lesson.type === "quiz" && "❓"}
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold mb-2">{lesson.title}</h3>
-              <p className="text-gray-600 text-sm mb-4">{lesson.description}</p>
+              <h3 className="lesson-title">{lesson.title}</h3>
+              <p className="lesson-description">{lesson.description}</p>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1 mb-4">
+              <div className="lesson-tags">
                 {lesson.tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                  <span key={tag} className="tag">
                     {tag}
                   </span>
                 ))}
-                {lesson.tags.length > 3 && (
-                  <span className="text-xs text-gray-400">+{lesson.tags.length - 3} more</span>
-                )}
+                {lesson.tags.length > 3 && <span className="tag-more">+{lesson.tags.length - 3} more</span>}
               </div>
 
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                <span className="flex items-center gap-1">⏱️ {lesson.duration} min</span>
+              <div className="lesson-meta">
+                <span className="lesson-duration">⏱️ {lesson.duration} min</span>
                 <span
                   className={`badge ${
                     lesson.difficulty === "beginner"
@@ -189,26 +182,25 @@ export default function LessonsPage() {
                 </span>
               </div>
 
-              <Link href={`/lessons/${lesson.id}`} className="btn btn-primary w-full">
+              <Link href={`/lessons/${lesson.id}`} className="btn btn-primary lesson-btn">
                 {lesson.completed ? "Review Lesson" : "Start Lesson"}
               </Link>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold mb-2">No lessons found</h3>
-          <p className="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
+        <div className="no-lessons">
+          <div className="no-lessons-icon">🔍</div>
+          <h3>No lessons found</h3>
+          <p>Try adjusting your search or filter criteria</p>
           <button onClick={() => window.location.reload()} className="btn btn-primary">
             Reset Filters
           </button>
         </div>
       )}
 
-      {/* Load More */}
       {filteredLessons.length > 0 && filteredLessons.length >= 6 && (
-        <div className="text-center mt-8">
+        <div className="load-more">
           <button className="btn btn-secondary">Load More Lessons</button>
         </div>
       )}

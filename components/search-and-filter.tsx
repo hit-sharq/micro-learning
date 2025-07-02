@@ -32,6 +32,7 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
   const difficulties = ["beginner", "intermediate", "advanced"]
   const types = ["text", "video", "quiz"]
 
+  // Filter lessons effect
   useEffect(() => {
     const filtered = lessons.filter((lesson) => {
       const matchesSearch =
@@ -50,6 +51,7 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
     onFilter(filtered)
   }, [searchQuery, selectedCategory, selectedDifficulty, selectedType, lessons, onFilter])
 
+  // Search results effect
   useEffect(() => {
     if (searchQuery.length > 0) {
       const results = lessons
@@ -66,6 +68,7 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
     }
   }, [searchQuery, lessons])
 
+  // Click outside effect
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -87,11 +90,11 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
   const hasActiveFilters = searchQuery || selectedCategory || selectedDifficulty || selectedType
 
   return (
-    <div className="mb-6">
+    <div className="search-filter-container">
       {/* Search Bar */}
-      <div ref={searchRef} className="search-container mb-4">
-        <div className="relative">
-          <svg className="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div ref={searchRef} className="search-container">
+        <div className="search-input-wrapper">
+          <svg className="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -116,11 +119,11 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
               <Link
                 key={lesson.id}
                 href={`/lessons/${lesson.id}`}
-                className="search-result-item block"
+                className="search-result-item"
                 onClick={() => setShowResults(false)}
               >
-                <div className="font-medium text-sm">{lesson.title}</div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="search-result-title">{lesson.title}</div>
+                <div className="search-result-meta">
                   {lesson.category} • {lesson.difficulty}
                 </div>
               </Link>
@@ -130,11 +133,11 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
       </div>
 
       {/* Filters */}
-      <div className="filter-container">
+      <div className="filters-container">
         <div className="filter-group">
           <label className="filter-label">Category</label>
           <select
-            className="filter-select form-select"
+            className="filter-select"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
@@ -150,7 +153,7 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
         <div className="filter-group">
           <label className="filter-label">Difficulty</label>
           <select
-            className="filter-select form-select"
+            className="filter-select"
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
           >
@@ -165,11 +168,7 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
 
         <div className="filter-group">
           <label className="filter-label">Type</label>
-          <select
-            className="filter-select form-select"
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-          >
+          <select className="filter-select" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
             <option value="">All Types</option>
             {types.map((type) => (
               <option key={type} value={type}>
@@ -191,35 +190,35 @@ export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
 
       {/* Active Filters Display */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="active-filters">
           {searchQuery && (
-            <span className="badge badge-primary">
+            <span className="active-filter">
               Search: "{searchQuery}"
-              <button onClick={() => setSearchQuery("")} className="ml-2 text-xs hover:text-red-600">
+              <button onClick={() => setSearchQuery("")} className="filter-remove">
                 ×
               </button>
             </span>
           )}
           {selectedCategory && (
-            <span className="badge badge-primary">
+            <span className="active-filter">
               Category: {selectedCategory}
-              <button onClick={() => setSelectedCategory("")} className="ml-2 text-xs hover:text-red-600">
+              <button onClick={() => setSelectedCategory("")} className="filter-remove">
                 ×
               </button>
             </span>
           )}
           {selectedDifficulty && (
-            <span className="badge badge-primary">
+            <span className="active-filter">
               Difficulty: {selectedDifficulty}
-              <button onClick={() => setSelectedDifficulty("")} className="ml-2 text-xs hover:text-red-600">
+              <button onClick={() => setSelectedDifficulty("")} className="filter-remove">
                 ×
               </button>
             </span>
           )}
           {selectedType && (
-            <span className="badge badge-primary">
+            <span className="active-filter">
               Type: {selectedType}
-              <button onClick={() => setSelectedType("")} className="ml-2 text-xs hover:text-red-600">
+              <button onClick={() => setSelectedType("")} className="filter-remove">
                 ×
               </button>
             </span>
