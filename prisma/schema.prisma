@@ -1,0 +1,344 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  role      Role     @default(STUDENT)
+  avatar    String?
+  
+  // Profile settings
+  timezone          String   @default("UTC")
+  dailyGoal         Int      @default(1) // lessons per day
+  reminderTime      String?  // HH:MM format
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  
+  // Learning preferences
+  preferredDifficulty Difficulty?
+  preferredCategories String[] // Array of category IDs
+  learningStyle      LearningStyle @default(MIXED)
+  
+  // Status tracking
+  isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  progress    UserProgress[]
+  streaks     UserStreak?
+  achievements UserAchievement[]
+  bookmarks   UserBookmark[]
+  
+  @@map("users")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  color       String   @default("#3B82F6")
+  icon        String?
+  slug        String   @unique
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  lessons Lesson[]
+  
+  @@map("categories")
+}
+
+model Lesson {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  content     String?
+  type        LessonType
+  
+  // Video specific fields
+  videoUrl    String?
+  videoDuration Int?    // in seconds
+  videoThumbnail String?
+  
+  // Quiz specific fields
+  quizData    Json?
+  
+  // File attachments
+  attachments Json?    // Array of file URLs and metadata
+  
+  // Metadata
+  categoryId     Int
+  difficulty     Difficulty @default(BEGINNER)
+  estimatedDuration Int @default(5) // in minutes
+  tags           String[]
+  
+  // Publishing
+  isPublished    Boolean @default(false)
+  publishedAt    DateTime?
+  
+  // SEO
+  slug           String @unique
+  metaDescription String?
+  
+  // Admin tracking
+  createdBy      String?  // Admin user ID
+  lastEditedBy   String?  // Admin user ID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  category     Category @relation(fields: [categoryId], references: [id])
+  progress     UserProgress[]
+  bookmarks    UserBookmark[]
+  reports      ContentReport[]
+  
+  @@map("lessons")
+}
+
+model UserProgress {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  lessonId    Int
+  
+  // Progress tracking
+  completed   Boolean  @default(false)
+  score       Int?     // percentage for quizzes
+  timeSpent   Int?     // in seconds
+  attempts    Int      @default(0)
+  
+  // Video progress
+  videoProgress Int?   // seconds watched
+  
+  // Quiz progress
+  quizAnswers Json?   // user's answers
+  
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user   User   @relation(fields: [userId], references: [clerkId])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+  
+  @@unique([userId, lessonId])
+  @@map("user_progress")
+}
+
+model UserStreak {
+  id              Int      @id @default(autoincrement())
+  userId          String   @unique
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  lastActivityDate Date?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [clerkId])
+  
+  @@map("user_streaks")
+}
+
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  icon        String
+  type        AchievementType
+  criteria    Json     // Conditions to unlock
+  points      Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            Int      @id @default(autoincrement())
+  userId        String
+  achievementId Int
+  unlockedAt    DateTime @default(now())
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [clerkId])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model UserBookmark {
+  id       Int      @id @default(autoincrement())
+  userId   String
+  lessonId Int
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user   User   @relation(fields: [userId], references: [clerkId])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+  
+  @@unique([userId, lessonId])
+  @@map("user_bookmarks")
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  type        AnnouncementType @default(INFO)
+  priority    Priority @default(NORMAL)
+  
+  // Targeting
+  targetAudience String[] // ["all", "students", "specific_users"]
+  targetUsers    String[] // Specific user IDs if targeted
+  
+  // Scheduling
+  publishAt   DateTime @default(now())
+  expiresAt   DateTime?
+  
+  // Status
+  isActive    Boolean  @default(true)
+  isDraft     Boolean  @default(false)
+  
+  // Tracking
+  viewCount   Int      @default(0)
+  clickCount  Int      @default(0)
+  
+  // Admin info
+  createdBy   String   // Admin user ID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  views AnnouncementView[]
+  
+  @@map("announcements")
+}
+
+model AnnouncementView {
+  id             Int      @id @default(autoincrement())
+  userId         String
+  announcementId Int
+  viewedAt       DateTime @default(now())
+  clicked        Boolean  @default(false)
+  
+  // Relations
+  announcement Announcement @relation(fields: [announcementId], references: [id])
+  
+  @@unique([userId, announcementId])
+  @@map("announcement_views")
+}
+
+model ContentReport {
+  id          Int      @id @default(autoincrement())
+  lessonId    Int
+  reportedBy  String   // User ID
+  reason      ReportReason
+  description String?
+  status      ReportStatus @default(PENDING)
+  
+  // Admin response
+  reviewedBy  String?  // Admin user ID
+  reviewedAt  DateTime?
+  adminNotes  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+  
+  @@map("content_reports")
+}
+
+// Enums
+enum Role {
+  STUDENT
+  ADMIN
+  INSTRUCTOR
+}
+
+enum LessonType {
+  TEXT
+  VIDEO
+  QUIZ
+  INTERACTIVE
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LearningStyle {
+  VISUAL
+  AUDITORY
+  KINESTHETIC
+  MIXED
+}
+
+enum AchievementType {
+  STREAK
+  COMPLETION
+  SCORE
+  TIME
+  SPECIAL
+}
+
+enum AnnouncementType {
+  INFO
+  WARNING
+  SUCCESS
+  UPDATE
+  MAINTENANCE
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ReportReason {
+  INAPPROPRIATE_CONTENT
+  TECHNICAL_ERROR
+  OUTDATED_INFORMATION
+  SPAM
+  COPYRIGHT_VIOLATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
