@@ -1,5 +1,4 @@
-import { NextResponse, NextRequest } from "next/server"
-import { clerkMiddleware, createRouteMatcher, getAuth } from "@clerk/nextjs/server"
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -9,28 +8,17 @@ const isProtectedRoute = createRouteMatcher([
   "/bookmarks(.*)",
   "/profile(.*)",
   "/admin(.*)",
-  "/api/lessons(.*)",
-  "/api/progress(.*)",
-  "/api/bookmarks(.*)",
 ])
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"])
-
 export default clerkMiddleware(async (auth, req) => {
-  // Allow public routes
-  if (isPublicRoute(req)) return NextResponse.next()
-
-  // Protect all other routes
   if (isProtectedRoute(req)) {
-    const authState = await auth()
-    if (!authState.userId) {
-      // Redirect to sign-in if not authenticated
-      return NextResponse.redirect(new URL("/sign-in", req.url))
-    }
+    await auth.protect()
   }
-  return NextResponse.next()
 })
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+  ],
 }

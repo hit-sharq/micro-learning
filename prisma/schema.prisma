@@ -147,7 +147,7 @@ model UserStreak {
   userId          String   @unique
   currentStreak   Int      @default(0)
   longestStreak   Int      @default(0)
-  lastActivityDate DateTime?
+  lastActivityDate Date?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
