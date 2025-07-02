@@ -51,15 +51,21 @@ async function getAdminStats() {
 }
 
 export default async function AdminPage() {
+  console.log("Admin page loading...")
+
   const { userId } = await auth()
+  console.log("Admin page - User ID:", userId)
 
   if (!userId) {
+    console.log("No user ID, redirecting to sign-in")
     redirect("/sign-in")
   }
 
   const userIsAdmin = await isAdmin()
+  console.log("User is admin:", userIsAdmin)
 
   if (!userIsAdmin) {
+    console.log("User is not admin, redirecting to dashboard")
     redirect("/dashboard")
   }
 
@@ -68,6 +74,14 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Debug Info */}
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+          <h3 className="font-semibold text-yellow-800">Debug Info:</h3>
+          <p className="text-yellow-700">User ID: {userId}</p>
+          <p className="text-yellow-700">Is Admin: {userIsAdmin ? "Yes" : "No"}</p>
+          <p className="text-yellow-700">Admin IDs: {process.env.ADMIN_USER_IDS || "Not set"}</p>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-4">
