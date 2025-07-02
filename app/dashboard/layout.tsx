@@ -1,56 +1,102 @@
 import type React from "react"
-import { auth } from "@/auth"
-import { isAdminUser } from "@/lib/admin"
-import { Settings } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
+import { UserButton } from "@clerk/nextjs"
+import { isAdmin } from "@/lib/admin"
 import Link from "next/link"
+import { BookOpen, Home, Bookmark, TrendingUp, Trophy, Settings, Shield } from "lucide-react"
 
-import { MainNav } from "@/components/main-nav"
-import { SidebarNav } from "@/components/sidebar-nav"
-import { siteConfig } from "@/config/site"
-
-interface DashboardLayoutProps {
+export default async function DashboardLayout({
+  children,
+}: {
   children: React.ReactNode
-}
-
-export default async function DashboardLayout({ children }: DashboardLayoutProps) {
+}) {
   const { userId } = await auth()
-  const isAdmin = userId ? isAdminUser(userId) : false
 
-  const sidebarNavItems = siteConfig.sidebarNavItems
+  if (!userId) {
+    redirect("/sign-in")
+  }
+
+  const userIsAdmin = await isAdmin()
 
   return (
-    <div className="flex min-h-screen flex-col space-y-6">
-      <header className="border-b">
-        <div className="container flex h-16 items-center">
-          <MainNav className="mx-6" />
-          <div className="ml-auto flex items-center space-x-4">
-            <Link href="/documentation" className="text-sm font-medium underline underline-offset-4">
-              Documentation
-            </Link>
-            <Link href="/examples" className="text-sm font-medium underline underline-offset-4">
-              Examples
-            </Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <Link href="/dashboard" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">Microlearning Coach</span>
+              </Link>
+
+              <div className="hidden md:flex items-center space-x-1">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link
+                  href="/lessons"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Lessons</span>
+                </Link>
+                <Link
+                  href="/progress"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Progress</span>
+                </Link>
+                <Link
+                  href="/achievements"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span>Achievements</span>
+                </Link>
+                <Link
+                  href="/bookmarks"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <Bookmark className="w-4 h-4" />
+                  <span>Bookmarks</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {userIsAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="font-medium">Admin</span>
+                </Link>
+              )}
+              <Link
+                href="/profile"
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </div>
         </div>
-      </header>
-      <div className="container grid flex-1 gap-12 md:grid-cols-[200px_1fr]">
-        <aside className="hidden w-[200px] flex-col md:flex">
-          <SidebarNav items={sidebarNavItems} />
-          <div className="py-4">
-            {/* Admin Link - only show for admins */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors group"
-              >
-                <Settings className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
-                <span className="font-medium">Admin Panel</span>
-              </Link>
-            )}
-          </div>
-        </aside>
-        <main className="flex-1">{children}</main>
-      </div>
+      </nav>
+
+      {/* Main Content */}
+      <main>{children}</main>
     </div>
   )
 }
