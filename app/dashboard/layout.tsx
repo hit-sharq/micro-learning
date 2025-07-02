@@ -1,72 +1,64 @@
 import type React from "react"
-import { auth } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
+import { isAdmin } from "@/lib/admin"
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    redirect("/sign-in")
-  }
+  const userIsAdmin = await isAdmin()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <nav className="navbar bg-white">
-        <div className="container navbar-content">
-          <Link href="/dashboard" className="logo">
-            🎯 Microlearning Coach
-          </Link>
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <span className="text-2xl">🎯</span>
+              <span className="font-bold text-xl">Microlearning Coach</span>
+            </Link>
 
-          <div className="flex items-center gap-4">
-            <Link href="/lessons" className="nav-link">
-              Lessons
-            </Link>
-            <Link href="/progress" className="nav-link">
-              Progress
-            </Link>
-            <UserButton afterSignOutUrl="/" />
+            <div className="flex items-center space-x-6">
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 font-medium">
+                Dashboard
+              </Link>
+              <Link href="/lessons" className="text-gray-600 hover:text-gray-900 font-medium">
+                Lessons
+              </Link>
+              <Link href="/progress" className="text-gray-600 hover:text-gray-900 font-medium">
+                Progress
+              </Link>
+              <Link href="/achievements" className="text-gray-600 hover:text-gray-900 font-medium">
+                Achievements
+              </Link>
+              <Link href="/bookmarks" className="text-gray-600 hover:text-gray-900 font-medium">
+                Bookmarks
+              </Link>
+              <Link href="/profile" className="text-gray-600 hover:text-gray-900 font-medium">
+                Profile
+              </Link>
+
+              {/* Admin Tab - Only show if user is admin */}
+              {userIsAdmin && (
+                <Link
+                  href="/admin"
+                  className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium hover:bg-red-200 transition-colors"
+                >
+                  Admin Panel
+                </Link>
+              )}
+
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </div>
         </div>
       </nav>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <nav>
-            <ul className="sidebar-nav">
-              <li>
-                <Link href="/dashboard" className="active">
-                  📊 Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/lessons">📚 Browse Lessons</Link>
-              </li>
-              <li>
-                <Link href="/progress">📈 My Progress</Link>
-              </li>
-              <li>
-                <Link href="/achievements">🏆 Achievements</Link>
-              </li>
-              <li>
-                <Link href="/settings">⚙️ Settings</Link>
-              </li>
-            </ul>
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          <div className="container">{children}</div>
-        </main>
-      </div>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
   )
 }

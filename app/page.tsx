@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 
 export default function HomePage() {
   return (
@@ -13,9 +13,12 @@ export default function HomePage() {
 
           <div className="flex items-center gap-4">
             <SignedOut>
-              <SignInButton mode="modal">
-                <button className="btn btn-primary">Get Started</button>
-              </SignInButton>
+              <Link href="/sign-in" className="btn btn-secondary">
+                Sign In
+              </Link>
+              <Link href="/sign-up" className="btn btn-primary">
+                Get Started
+              </Link>
             </SignedOut>
             <SignedIn>
               <Link href="/dashboard" className="btn btn-secondary">
@@ -41,9 +44,9 @@ export default function HomePage() {
 
             <div className="flex justify-center gap-4 mb-12">
               <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="btn btn-primary text-lg px-8 py-4">Start Learning Free</button>
-                </SignInButton>
+                <Link href="/sign-up" className="btn btn-primary text-lg px-8 py-4">
+                  Start Learning Free
+                </Link>
               </SignedOut>
               <SignedIn>
                 <Link href="/dashboard" className="btn btn-primary text-lg px-8 py-4">
@@ -140,9 +143,9 @@ export default function HomePage() {
           </p>
 
           <SignedOut>
-            <SignInButton mode="modal">
-              <button className="btn btn-primary text-lg px-8 py-4">Start Your Journey Today</button>
-            </SignInButton>
+            <Link href="/sign-up" className="btn btn-primary text-lg px-8 py-4">
+              Start Your Journey Today
+            </Link>
           </SignedOut>
           <SignedIn>
             <Link href="/dashboard" className="btn btn-primary text-lg px-8 py-4">

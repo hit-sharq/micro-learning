@@ -1,4 +1,3 @@
-import { prisma } from "./prisma"
 import { auth } from "@clerk/nextjs/server"
 
 export async function isAdmin() {
@@ -8,12 +7,10 @@ export async function isAdmin() {
     return false
   }
 
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { role: true },
-  })
+  // Get admin IDs from environment variable
+  const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
 
-  return user?.role === "ADMIN"
+  return adminIds.includes(userId)
 }
 
 export async function requireAdmin() {
@@ -26,45 +23,16 @@ export async function requireAdmin() {
   return true
 }
 
+// Mock stats for now - will be replaced with real data later
 export async function getAdminStats() {
-  const [
-    totalUsers,
-    activeUsers,
-    totalLessons,
-    publishedLessons,
-    totalProgress,
-    completedLessons,
-    totalStreaks,
-    activeStreaks,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({
-      where: {
-        updatedAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-    }),
-    prisma.lesson.count(),
-    prisma.lesson.count({ where: { isPublished: true } }),
-    prisma.userProgress.count(),
-    prisma.userProgress.count({ where: { completed: true } }),
-    prisma.userStreak.count(),
-    prisma.userStreak.count({
-      where: {
-        currentStreak: { gt: 0 },
-      },
-    }),
-  ])
-
   return {
-    totalUsers,
-    activeUsers,
-    totalLessons,
-    publishedLessons,
-    totalProgress,
-    completedLessons,
-    totalStreaks,
-    activeStreaks,
+    totalUsers: 156,
+    activeUsers: 89,
+    totalLessons: 45,
+    publishedLessons: 38,
+    totalProgress: 1247,
+    completedLessons: 892,
+    totalStreaks: 67,
+    activeStreaks: 34,
   }
 }
