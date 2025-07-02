@@ -11,9 +11,10 @@ export async function GET() {
     }
 
     const bookmarks = await getUserBookmarks(userId)
+
     return NextResponse.json({ bookmarks })
   } catch (error) {
-    console.error("Bookmarks fetch error:", error)
+    console.error("Error fetching bookmarks:", error)
     return NextResponse.json({ error: "Failed to fetch bookmarks" }, { status: 500 })
   }
 }
@@ -27,11 +28,19 @@ export async function POST(request: NextRequest) {
     }
 
     const { lessonId } = await request.json()
+
+    if (!lessonId) {
+      return NextResponse.json({ error: "Lesson ID is required" }, { status: 400 })
+    }
+
     const isBookmarked = await toggleBookmark(userId, lessonId)
 
-    return NextResponse.json({ isBookmarked })
+    return NextResponse.json({
+      isBookmarked,
+      message: isBookmarked ? "Lesson bookmarked!" : "Bookmark removed!",
+    })
   } catch (error) {
-    console.error("Bookmark toggle error:", error)
+    console.error("Error toggling bookmark:", error)
     return NextResponse.json({ error: "Failed to toggle bookmark" }, { status: 500 })
   }
 }

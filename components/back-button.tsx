@@ -1,0 +1,37 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+
+interface BackButtonProps {
+  href?: string
+  label?: string
+  className?: string
+  variant?: "default" | "ghost" | "outline"
+}
+
+export function BackButton({ href, label = "Back", className = "", variant = "ghost" }: BackButtonProps) {
+  const router = useRouter()
+
+  const handleBack = () => {
+    if (href) {
+      router.push(href)
+    } else {
+      router.back()
+    }
+  }
+
+  const baseClasses = "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+  const variantClasses = {
+    default: "bg-blue-600 text-white hover:bg-blue-700",
+    ghost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
+    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50",
+  }
+
+  return (
+    <button onClick={handleBack} className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
+      <ArrowLeft className="w-4 h-4" />
+      {label}
+    </button>
+  )
+}

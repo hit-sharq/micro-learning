@@ -1,19 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-
-// Import the new components at the top
+import { BackButton } from "@/components/back-button"
+import { BookmarkButton } from "@/components/bookmark-button"
 import { VideoPlayer } from "@/components/video-player"
 import { AdvancedQuiz } from "@/components/advanced-quiz"
+import { toast } from "sonner"
 
 interface Lesson {
   id: number
   title: string
   description: string
   content: string
-  type: "text" | "video" | "quiz"
+  type: "TEXT" | "VIDEO" | "QUIZ"
   videoUrl?: string
   videoThumbnail?: string
   quizData?: {
@@ -28,152 +29,111 @@ interface Lesson {
       points: number
     }>
   }
-  category: string
+  category: {
+    name: string
+    color: string
+  }
   difficulty: string
-  duration: number
-}
-
-// Update the lessons data to include video lessons
-const lessons: Record<string, Lesson> = {
-  "1": {
-    id: 1,
-    title: "JavaScript Basics",
-    description: "Learn the fundamentals of JavaScript programming",
-    content: `# JavaScript Basics
-
-JavaScript is a versatile programming language that powers the modern web. In this lesson, we'll cover the fundamental concepts you need to get started.
-
-## Variables
-
-Variables are containers for storing data values. In JavaScript, you can declare variables using \`let\`, \`const\`, or \`var\`:
-
-\`\`\`javascript
-let name = "John";
-const age = 25;
-var city = "New York";
-\`\`\`
-
-## Functions
-
-Functions are reusable blocks of code that perform specific tasks:
-
-\`\`\`javascript
-function greet(name) {
-  return "Hello, " + name + "!";
-}
-
-console.log(greet("Alice")); // Output: Hello, Alice!
-\`\`\`
-
-## Data Types
-
-JavaScript has several built-in data types:
-- **String**: Text data
-- **Number**: Numeric data
-- **Boolean**: True or false
-- **Array**: Ordered list of values
-- **Object**: Key-value pairs
-
-## Key Takeaways
-
-1. Variables store data values
-2. Functions make code reusable
-3. JavaScript is dynamically typed
-4. Practice is essential for mastery
-
-Great job completing this lesson! You now understand the basic building blocks of JavaScript programming.`,
-    type: "text",
-    category: "Programming",
-    difficulty: "beginner",
-    duration: 5,
-  },
-  "4": {
-    id: 4,
-    title: "CSS Flexbox Quiz",
-    description: "Test your knowledge of CSS Flexbox",
-    content: "",
-    type: "quiz",
-    category: "Programming",
-    difficulty: "intermediate",
-    duration: 3,
-    quizData: {
-      questions: [
-        {
-          id: "q1",
-          type: "multiple-choice",
-          question: "What does 'justify-content: center' do in Flexbox?",
-          options: [
-            "Centers items vertically",
-            "Centers items horizontally along the main axis",
-            "Distributes space evenly",
-            "Aligns items to the start",
-          ],
-          correctAnswer: 1,
-          explanation: "justify-content: center centers flex items along the main axis (horizontally by default).",
-          hint: "Think about which axis justify-content affects.",
-          points: 10,
-        },
-        {
-          id: "q2",
-          type: "multiple-choice",
-          question: "Which property controls the main axis in Flexbox?",
-          options: ["align-items", "justify-content", "flex-direction", "flex-wrap"],
-          correctAnswer: 2,
-          explanation: "flex-direction determines the main axis direction (row, column, etc.).",
-          points: 10,
-        },
-        {
-          id: "q3",
-          type: "true-false",
-          question: "Flexbox can only arrange items horizontally.",
-          correctAnswer: 1, // False
-          explanation:
-            "Flexbox can arrange items both horizontally (row) and vertically (column) using flex-direction.",
-          points: 5,
-        },
-        {
-          id: "q4",
-          type: "fill-blank",
-          question: "What is the default value of flex-direction?",
-          correctAnswer: "row",
-          explanation: "The default flex-direction is 'row', which arranges items horizontally.",
-          hint: "Think about the most common layout direction.",
-          points: 15,
-        },
-      ],
-    },
-  },
-  "5": {
-    id: 5,
-    title: "Machine Learning Intro",
-    description: "Basic concepts of machine learning",
-    content: "",
-    type: "video",
-    category: "Data Science",
-    difficulty: "beginner",
-    duration: 8,
-    videoUrl: "/placeholder-video.mp4", // In a real app, this would be a real video URL
-    videoThumbnail: "/placeholder.svg?height=400&width=600",
-  },
+  estimatedDuration: number
+  userProgress?: {
+    completed: boolean
+    score?: number
+    timeSpent?: number
+    videoProgress?: number
+  }
 }
 
 export default function LessonPage() {
   const params = useParams()
   const router = useRouter()
-  const lessonId = params.id as string
-  const lesson = lessons[lessonId]
+  const lessonId = Number.parseInt(params.id as string)
 
+  const [lesson, setLesson] = useState<Lesson | null>(null)
+  const [loading, setLoading] = useState(true)
   const [completed, setCompleted] = useState(false)
   const [score, setScore] = useState(0)
+  const [startTime] = useState(Date.now())
+
+  useEffect(() => {
+    fetchLesson()
+  }, [lessonId])
+
+  const fetchLesson = async () => {
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setLesson(data.lesson)
+        setCompleted(data.lesson.userProgress?.completed || false)
+        setScore(data.lesson.userProgress?.score || 0)
+      } else {
+        toast.error("Lesson not found")
+        router.push("/lessons")
+      }
+    } catch (error) {
+      console.error("Failed to fetch lesson:", error)
+      toast.error("Failed to load lesson")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateProgress = async (progressData: any) => {
+    try {
+      const timeSpent = Math.round((Date.now() - startTime) / 1000)
+
+      const response = await fetch(`/api/lessons/${lessonId}/progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...progressData,
+          timeSpent,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message)
+        return data.progress
+      }
+    } catch (error) {
+      console.error("Failed to update progress:", error)
+      toast.error("Failed to save progress")
+    }
+  }
+
+  const handleComplete = async (lessonScore?: number) => {
+    const progress = await updateProgress({
+      completed: true,
+      score: lessonScore || 100,
+    })
+
+    if (progress) {
+      setCompleted(true)
+      setScore(lessonScore || 100)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-200 rounded mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!lesson) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Lesson Not Found</h1>
-          <Link href="/lessons" className="btn btn-primary">
-            Back to Lessons
-          </Link>
+          <BackButton href="/lessons" label="Back to Lessons" variant="default" />
         </div>
       </div>
     )
@@ -186,19 +146,18 @@ export default function LessonPage() {
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/lessons" className="btn btn-secondary">
-                ← Back
-              </Link>
+              <BackButton href="/lessons" />
               <div>
                 <h1 className="text-xl font-semibold">{lesson.title}</h1>
                 <p className="text-sm text-gray-600">
-                  {lesson.category} • {lesson.difficulty}
+                  {lesson.category.name} • {lesson.difficulty.toLowerCase()}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">⏱️ {lesson.duration} min</span>
+              <BookmarkButton lessonId={lesson.id} />
+              <span className="text-sm text-gray-600">⏱️ {lesson.estimatedDuration} min</span>
               {completed && <span className="badge badge-success">✓ Completed</span>}
             </div>
           </div>
@@ -207,19 +166,23 @@ export default function LessonPage() {
 
       <div className="container py-8">
         <div className="max-w-4xl mx-auto">
-          {lesson.type === "text" && (
+          {lesson.type === "TEXT" && (
             <div className="card">
               <div className="prose max-w-none">
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: lesson.content.replace(/\n/g, "<br>").replace(/`([^`]+)`/g, "<code>$1</code>"),
+                    __html: lesson.content
+                      .replace(/\n/g, "<br>")
+                      .replace(/`([^`]+)`/g, "<code>$1</code>")
+                      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+                      .replace(/\*([^*]+)\*/g, "<em>$1</em>"),
                   }}
                 />
               </div>
 
               {!completed && (
                 <div className="mt-8 pt-6 border-t">
-                  <button onClick={() => setCompleted(true)} className="btn btn-success">
+                  <button onClick={() => handleComplete()} className="btn btn-success">
                     Mark as Complete
                   </button>
                 </div>
@@ -248,18 +211,18 @@ export default function LessonPage() {
             </div>
           )}
 
-          {lesson.type === "video" && (
+          {lesson.type === "VIDEO" && (
             <div className="card">
               <VideoPlayer
                 src={lesson.videoUrl || ""}
                 poster={lesson.videoThumbnail}
-                onProgress={(currentTime, duration) => {
-                  // Save video progress
-                  console.log(`Progress: ${currentTime}/${duration}`)
+                onProgress={async (currentTime, duration) => {
+                  const progress = (currentTime / duration) * 100
+                  await updateProgress({ videoProgress: progress })
                 }}
                 onComplete={() => {
                   if (!completed) {
-                    setCompleted(true)
+                    handleComplete()
                   }
                 }}
               />
@@ -269,9 +232,9 @@ export default function LessonPage() {
                 <p className="text-gray-600 mb-4">{lesson.description}</p>
 
                 <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                  <span>⏱️ {lesson.duration} minutes</span>
-                  <span>📊 {lesson.difficulty}</span>
-                  <span>📂 {lesson.category}</span>
+                  <span>⏱️ {lesson.estimatedDuration} minutes</span>
+                  <span>📊 {lesson.difficulty.toLowerCase()}</span>
+                  <span>📂 {lesson.category.name}</span>
                 </div>
 
                 {completed && (
@@ -298,16 +261,17 @@ export default function LessonPage() {
             </div>
           )}
 
-          {lesson.type === "quiz" && lesson.quizData && (
+          {lesson.type === "QUIZ" && lesson.quizData && (
             <AdvancedQuiz
               questions={lesson.quizData.questions}
-              onComplete={(score, answers) => {
-                setScore(score)
-                setCompleted(true)
-                // In a real app, save the results to the database
-                console.log("Quiz completed:", { score, answers })
+              onComplete={async (finalScore, answers) => {
+                await handleComplete(finalScore)
+                await updateProgress({
+                  quizAnswers: answers,
+                  score: finalScore,
+                })
               }}
-              timeLimit={300} // 5 minutes total
+              timeLimit={300}
               showHints={true}
               showExplanations={true}
             />

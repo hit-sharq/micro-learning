@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { X, Trophy } from "lucide-react"
 
 interface Achievement {
   id: number
@@ -11,50 +12,95 @@ interface Achievement {
 }
 
 interface AchievementNotificationProps {
-  achievements: Achievement[]
+  achievement: Achievement
   onClose: () => void
 }
 
-export function AchievementNotification({ achievements, onClose }: AchievementNotificationProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+export function AchievementNotification({ achievement, onClose }: AchievementNotificationProps) {
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    if (achievements.length === 0) return
+    // Animate in
+    setTimeout(() => setIsVisible(true), 100)
 
+    // Auto close after 5 seconds
     const timer = setTimeout(() => {
-      if (currentIndex < achievements.length - 1) {
-        setCurrentIndex(currentIndex + 1)
-      } else {
-        onClose()
-      }
-    }, 3000)
+      handleClose()
+    }, 5000)
 
     return () => clearTimeout(timer)
-  }, [currentIndex, achievements.length, onClose])
+  }, [])
 
-  if (achievements.length === 0) return null
-
-  const achievement = achievements[currentIndex]
+  const handleClose = () => {
+    setIsVisible(false)
+    setTimeout(onClose, 300) // Wait for animation to complete
+  }
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg p-6 shadow-xl max-w-sm">
-        <div className="flex items-center gap-4">
-          <div className="text-4xl">{achievement.icon}</div>
-          <div className="flex-1">
-            <div className="font-bold text-lg">Achievement Unlocked!</div>
-            <div className="font-semibold">{achievement.name}</div>
-            <div className="text-sm opacity-90">{achievement.description}</div>
-            <div className="text-xs mt-1">+{achievement.points} points</div>
+    <div
+      className={`fixed top-4 right-4 z-50 transform transition-all duration-300 ${
+        isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+      }`}
+    >
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg shadow-lg p-4 max-w-sm">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">{achievement.icon}</div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy className="w-4 h-4" />
+                <span className="font-semibold text-sm">Achievement Unlocked!</span>
+              </div>
+              <h4 className="font-bold">{achievement.name}</h4>
+              <p className="text-sm opacity-90">{achievement.description}</p>
+              <div className="text-xs mt-1 opacity-75">+{achievement.points} points</div>
+            </div>
           </div>
+          <button onClick={handleClose} className="text-white/80 hover:text-white transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-
-        {achievements.length > 1 && (
-          <div className="mt-3 text-xs text-center opacity-75">
-            {currentIndex + 1} of {achievements.length}
-          </div>
-        )}
       </div>
     </div>
   )
+}
+
+// Achievement Manager Component
+export function AchievementManager() {
+  const [achievements, setAchievements] = useState<Achievement[]>([])
+
+  useEffect(() => {
+    // Listen for achievement events
+    const handleAchievement = (event: CustomEvent<Achievement>) => {
+      setAchievements((prev) => [...prev, event.detail])
+    }
+
+    window.addEventListener("achievement-unlocked", handleAchievement as EventListener)
+
+    return () => {
+      window.removeEventListener("achievement-unlocked", handleAchievement as EventListener)
+    }
+  }, [])
+
+  const removeAchievement = (id: number) => {
+    setAchievements((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  return (
+    <>
+      {achievements.map((achievement) => (
+        <AchievementNotification
+          key={achievement.id}
+          achievement={achievement}
+          onClose={() => removeAchievement(achievement.id)}
+        />
+      ))}
+    </>
+  )
+}
+
+// Helper function to trigger achievement notifications
+export function triggerAchievement(achievement: Achievement) {
+  const event = new CustomEvent("achievement-unlocked", { detail: achievement })
+  window.dispatchEvent(event)
 }

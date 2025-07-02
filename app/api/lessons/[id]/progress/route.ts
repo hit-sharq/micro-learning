@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
-import { updateUserProgress, updateUserStreak, checkAndUnlockAchievements } from "@/lib/database-operations"
+import { updateUserProgress } from "@/lib/database-operations"
+import { prisma } from "@/lib/prisma" // Declare the prisma variable
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -13,25 +14,41 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const lessonId = Number.parseInt(params.id)
     const body = await request.json()
 
-    // Update progress
     const progress = await updateUserProgress(userId, lessonId, body)
 
-    // Update streak if lesson completed
-    if (body.completed) {
-      await updateUserStreak(userId)
+    return NextResponse.json({
+      success: true,
+      progress,
+      message: body.completed ? "Lesson completed!" : "Progress saved!",
+    })
+  } catch (error) {
+    console.error("Error updating progress:", error)
+    return NextResponse.json({ error: "Failed to update progress" }, { status: 500 })
+  }
+}
 
-      // Check for new achievements
-      const newAchievements = await checkAndUnlockAchievements(userId)
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { userId } = await auth()
 
-      return NextResponse.json({
-        progress,
-        newAchievements: newAchievements.length > 0 ? newAchievements : undefined,
-      })
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const lessonId = Number.parseInt(params.id)
+
+    const progress = await prisma.userProgress.findUnique({
+      where: {
+        userId_lessonId: {
+          userId,
+          lessonId,
+        },
+      },
+    })
 
     return NextResponse.json({ progress })
   } catch (error) {
-    console.error("Progress update error:", error)
-    return NextResponse.json({ error: "Failed to update progress" }, { status: 500 })
+    console.error("Error fetching progress:", error)
+    return NextResponse.json({ error: "Failed to fetch progress" }, { status: 500 })
   }
 }

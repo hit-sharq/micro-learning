@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { BackButton } from "@/components/back-button"
 import { BookmarkButton } from "@/components/bookmark-button"
+import { toast } from "sonner"
 
 interface Bookmark {
   id: number
@@ -32,10 +34,15 @@ export default function BookmarksPage() {
   const fetchBookmarks = async () => {
     try {
       const response = await fetch("/api/bookmarks")
-      const data = await response.json()
-      setBookmarks(data.bookmarks || [])
+      if (response.ok) {
+        const data = await response.json()
+        setBookmarks(data.bookmarks || [])
+      } else {
+        toast.error("Failed to load bookmarks")
+      }
     } catch (error) {
       console.error("Failed to fetch bookmarks:", error)
+      toast.error("Failed to load bookmarks")
     } finally {
       setLoading(false)
     }
@@ -53,16 +60,21 @@ export default function BookmarksPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Bookmarks</h1>
-        <p className="text-gray-600">Lessons you've saved for later</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <BackButton href="/dashboard" />
+          <div>
+            <h1 className="text-3xl font-bold">My Bookmarks</h1>
+            <p className="text-gray-600">Lessons you've saved for later</p>
+          </div>
+        </div>
       </div>
 
       {bookmarks.length > 0 ? (
         <div className="grid grid-3 gap-6">
           {bookmarks.map((bookmark) => (
             <div key={bookmark.id} className="card hover:shadow-lg transition-all duration-300 relative">
-              <BookmarkButton lessonId={bookmark.lesson.id} />
+              <BookmarkButton lessonId={bookmark.lesson.id} className="absolute top-4 right-4 z-10" />
 
               <div className="flex items-start justify-between mb-3">
                 <span

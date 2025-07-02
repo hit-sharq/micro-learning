@@ -1,228 +1,136 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
+import { Search, Filter, X } from "lucide-react"
 
-interface Lesson {
-  id: number
-  title: string
-  description: string
-  type: string
+interface SearchFilters {
   category: string
   difficulty: string
-  duration: number
-  tags: string[]
+  type: string
+  duration: string
 }
 
 interface SearchAndFilterProps {
-  lessons: Lesson[]
-  onFilter: (filteredLessons: Lesson[]) => void
+  onSearch: (query: string, filters: SearchFilters) => void
+  loading?: boolean
 }
 
-export function SearchAndFilter({ lessons, onFilter }: SearchAndFilterProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [selectedDifficulty, setSelectedDifficulty] = useState("")
-  const [selectedType, setSelectedType] = useState("")
-  const [searchResults, setSearchResults] = useState<Lesson[]>([])
-  const [showResults, setShowResults] = useState(false)
-  const searchRef = useRef<HTMLDivElement>(null)
+const categories = [
+  "All Categories",
+  "Programming",
+  "Data Science",
+  "Design",
+  "Business",
+  "Marketing",
+  "Languages",
+  "Science",
+  "Arts",
+]
 
-  const categories = [...new Set(lessons.map((l) => l.category))]
-  const difficulties = ["beginner", "intermediate", "advanced"]
-  const types = ["text", "video", "quiz"]
+const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"]
 
-  // Filter lessons effect
+const types = ["All Types", "Text", "Video", "Quiz"]
+
+const durations = ["Any Duration", "Under 5 min", "5-10 min", "10-20 min", "20+ min"]
+
+export function SearchAndFilter({ onSearch, loading = false }: SearchAndFilterProps) {
+  const [query, setQuery] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState<SearchFilters>({
+    category: "All Categories",
+    difficulty: "All Levels",
+    type: "All Types",
+    duration: "Any Duration",
+  })
+
+  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+
+  // Debounced search
   useEffect(() => {
-    const filtered = lessons.filter((lesson) => {
-      const matchesSearch =
-        !searchQuery ||
-        lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lesson.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lesson.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-
-      const matchesCategory = !selectedCategory || lesson.category === selectedCategory
-      const matchesDifficulty = !selectedDifficulty || lesson.difficulty === selectedDifficulty
-      const matchesType = !selectedType || lesson.type === selectedType
-
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesType
-    })
-
-    onFilter(filtered)
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedType, lessons, onFilter])
-
-  // Search results effect
-  useEffect(() => {
-    if (searchQuery.length > 0) {
-      const results = lessons
-        .filter(
-          (lesson) =>
-            lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            lesson.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
-        .slice(0, 5)
-      setSearchResults(results)
-      setShowResults(true)
-    } else {
-      setShowResults(false)
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
-  }, [searchQuery, lessons])
 
-  // Click outside effect
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false)
+    searchTimeoutRef.current = setTimeout(() => {
+      onSearch(query, filters)
+    }, 300)
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
       }
     }
+  }, [query, filters])
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  const clearFilters = () => {
-    setSearchQuery("")
-    setSelectedCategory("")
-    setSelectedDifficulty("")
-    setSelectedType("")
+  const handleSearch = () => {
+    onSearch(query, filters)
   }
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedDifficulty || selectedType
-
   return (
-    <div className="search-filter-container">
-      {/* Search Bar */}
-      <div ref={searchRef} className="search-container">
-        <div className="search-input-wrapper">
-          <svg className="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search lessons, topics, or tags..."
-            className="search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => searchQuery && setShowResults(true)}
-          />
-        </div>
-
-        {/* Search Results Dropdown */}
-        {showResults && searchResults.length > 0 && (
-          <div className="search-results">
-            {searchResults.map((lesson) => (
-              <Link
-                key={lesson.id}
-                href={`/lessons/${lesson.id}`}
-                className="search-result-item"
-                onClick={() => setShowResults(false)}
-              >
-                <div className="search-result-title">{lesson.title}</div>
-                <div className="search-result-meta">
-                  {lesson.category} • {lesson.difficulty}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="relative flex-1">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-4 py-2 pr-10 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <Search className="absolute right-3 top-3 h-5 w-5 text-gray-500" />
       </div>
-
-      {/* Filters */}
-      <div className="filters-container">
-        <div className="filter-group">
-          <label className="filter-label">Category</label>
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        {showFilters ? <X size={16} /> : <Filter size={16} />}
+        {showFilters ? " Hide Filters" : " Show Filters"}
+      </button>
+      {showFilters && (
+        <div className="flex flex-col md:flex-row gap-4 mt-4">
           <select
-            className="filter-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={filters.category}
+            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+            className="px-4 py-2 text-sm border rounded"
           >
-            <option value="">All Categories</option>
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Difficulty</label>
           <select
-            className="filter-select"
-            value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
+            value={filters.difficulty}
+            onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+            className="px-4 py-2 text-sm border rounded"
           >
-            <option value="">All Levels</option>
             {difficulties.map((difficulty) => (
               <option key={difficulty} value={difficulty}>
-                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                {difficulty}
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="filter-label">Type</label>
-          <select className="filter-select" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-            <option value="">All Types</option>
+          <select
+            value={filters.type}
+            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+            className="px-4 py-2 text-sm border rounded"
+          >
             {types.map((type) => (
               <option key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type}
               </option>
             ))}
           </select>
-        </div>
-
-        {hasActiveFilters && (
-          <div className="filter-group">
-            <label className="filter-label">&nbsp;</label>
-            <button onClick={clearFilters} className="btn btn-secondary">
-              Clear Filters
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="active-filters">
-          {searchQuery && (
-            <span className="active-filter">
-              Search: "{searchQuery}"
-              <button onClick={() => setSearchQuery("")} className="filter-remove">
-                ×
-              </button>
-            </span>
-          )}
-          {selectedCategory && (
-            <span className="active-filter">
-              Category: {selectedCategory}
-              <button onClick={() => setSelectedCategory("")} className="filter-remove">
-                ×
-              </button>
-            </span>
-          )}
-          {selectedDifficulty && (
-            <span className="active-filter">
-              Difficulty: {selectedDifficulty}
-              <button onClick={() => setSelectedDifficulty("")} className="filter-remove">
-                ×
-              </button>
-            </span>
-          )}
-          {selectedType && (
-            <span className="active-filter">
-              Type: {selectedType}
-              <button onClick={() => setSelectedType("")} className="filter-remove">
-                ×
-              </button>
-            </span>
-          )}
+          <select
+            value={filters.duration}
+            onChange={(e) => setFilters({ ...filters, duration: e.target.value })}
+            className="px-4 py-2 text-sm border rounded"
+          >
+            {durations.map((duration) => (
+              <option key={duration} value={duration}>
+                {duration}
+              </option>
+            ))}
+          </select>
         </div>
       )}
     </div>
