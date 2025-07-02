@@ -5,21 +5,24 @@ import Link from "next/link"
 
 async function getUserStats(userId: string) {
   try {
-    const [user, totalProgress, recentLessons, achievements] = await Promise.all([
+    const [user, totalProgress, recentLessons, userAchievements] = await Promise.all([
       prisma.user.findUnique({
         where: { clerkId: userId },
-        include: { _count: { select: { progress: true } } },
+        include: { 
+          _count: { select: { progress: true } },
+          streaks: true, // include UserStreak relation
+        },
       }),
-      prisma.progress.count({
+      prisma.userProgress.count({
         where: { userId, completed: true },
       }),
-      prisma.progress.findMany({
+      prisma.userProgress.findMany({
         where: { userId },
         take: 5,
         orderBy: { updatedAt: "desc" },
         include: { lesson: { select: { title: true, estimatedDuration: true } } },
       }),
-      prisma.achievement.findMany({
+      prisma.userAchievement.findMany({
         where: { userId },
         include: { achievement: true },
         orderBy: { unlockedAt: "desc" },
@@ -27,7 +30,7 @@ async function getUserStats(userId: string) {
       }),
     ])
 
-    const currentStreak = user?.currentStreak || 0
+    const currentStreak = user?.streaks?.currentStreak || 0
     const totalLessons = await prisma.lesson.count({ where: { isPublished: true } })
     const completionRate = totalLessons > 0 ? Math.round((totalProgress / totalLessons) * 100) : 0
 
@@ -36,7 +39,7 @@ async function getUserStats(userId: string) {
       currentStreak,
       completionRate,
       recentLessons,
-      achievements,
+      achievements: userAchievements,
       dailyGoal: user?.dailyGoal || 1,
     }
   } catch (error) {
@@ -145,15 +148,22 @@ export default async function DashboardPage() {
           </div>
           <div className="space-y-4">
             {stats.achievements.length > 0 ? (
-              stats.achievements.map((userAchievement, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="text-2xl">{userAchievement.achievement.icon}</div>
-                  <div>
-                    <div className="font-medium">{userAchievement.achievement.title}</div>
-                    <div className="text-sm text-gray-600">{userAchievement.achievement.description}</div>
+              stats.achievements.map((userAchievement, index) => {
+                const achievement = userAchievement.achievement as {
+                  icon?: string
+                  title?: string
+                  description?: string
+                }
+                return (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="text-2xl">{achievement?.icon}</div>
+                    <div>
+                      <div className="font-medium">{achievement?.title}</div>
+                      <div className="text-sm text-gray-600">{achievement?.description}</div>
+                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <p className="text-gray-500 text-center py-8">No achievements yet</p>
             )}
