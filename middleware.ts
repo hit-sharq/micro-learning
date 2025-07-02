@@ -1,4 +1,5 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
+import { NextResponse, NextRequest } from "next/server"
+import { clerkMiddleware, createRouteMatcher, getAuth } from "@clerk/nextjs/server"
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -15,14 +16,19 @@ const isProtectedRoute = createRouteMatcher([
 
 const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"])
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // Allow public routes
-  if (isPublicRoute(req)) return
+  if (isPublicRoute(req)) return NextResponse.next()
 
   // Protect all other routes
   if (isProtectedRoute(req)) {
-    auth().protect()
+    const authState = await auth()
+    if (!authState.userId) {
+      // Redirect to sign-in if not authenticated
+      return NextResponse.redirect(new URL("/sign-in", req.url))
+    }
   }
+  return NextResponse.next()
 })
 
 export const config = {
