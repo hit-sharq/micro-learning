@@ -1,30 +1,75 @@
-# Microlearning Coach App
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+# 📘 Microlearning Coach
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/officialfoodbridgeinfo-gmailcoms-projects/v0-microlearning-coach-app)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/eMp8GQ9hhky)
+**Microlearning Coach** is a mobile-first platform that delivers bite-sized, accessible, and affordable educational content to students in Kenya and beyond. It empowers learners with daily lessons, quizzes, and progress tracking—designed for quick, effective learning anytime, anywhere.
 
-## Overview
+---
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## 🚀 Features
 
-## Deployment
+- ✅ Bite-sized lessons across key subjects
+- ✅ Offline access for rural learners
+- ✅ Interactive quizzes and flashcards
+- ✅ Personalized progress tracking
+- ✅ Teacher content upload and sharing tools
+- ✅ Mobile-first, user-friendly design
 
-Your project is live at:
+---
 
-**[https://vercel.com/officialfoodbridgeinfo-gmailcoms-projects/v0-microlearning-coach-app](https://vercel.com/officialfoodbridgeinfo-gmailcoms-projects/v0-microlearning-coach-app)**
+## 🎯 Problem It Solves
 
-## Build your app
+- High cost of textbooks  
+- Limited availability of quality learning materials  
+- Lack of centralized, digital academic resources  
 
-Continue building your app on:
+---
 
-**[https://v0.dev/chat/projects/eMp8GQ9hhky](https://v0.dev/chat/projects/eMp8GQ9hhky)**
+## 💡 Why It’s Better
 
-## How It Works
+- Learn on the go with short, engaging content  
+- Accessible even with low internet or data  
+- Free and affordable educational resources  
+- Built for both students and teachers  
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+---
+
+## 📚 Subjects Covered
+
+- Math  
+- Science  
+- Kiswahili  
+- Business Studies  
+- And more...
+
+---
+
+## 🛠️ Tech Stack
+
+- Frontend: Next.js + TypeScript  
+- Backend: Node.js (API Routes)  
+- Database: PostgreSQL with Prisma  
+- Authentication: Clerk/Auth.js  
+- Styling: CSS Modules or Tailwind  
+- Deployment: Vercel  
+
+---
+
+## 🔧 Getting Started
+
+```bash
+git clone https://github.com/your-username/microlearning-coach.git
+cd microlearning-coach
+pnpm install
+pnpm dev
+```
+
+---
+
+## 📬 Contact
+
+Built with ❤️ by **Joshua Mwendwa** for [Vibe Coding Hackathon]  
+For questions or support, contact [ *leeroyjoshu@gmail.com/officialjoshuamwendwa@gmail.com*  or *https://github.com/hit-sharq*].
+
+## deployed project link: [https://microlearning-coach.vercel.app/](https://microlearning-coach
+
+---
