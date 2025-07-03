@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   title: "Microlearning Coach",
   description: "Master new skills in minutes a day with personalized bite-sized lessons",
   keywords: "learning, education, microlearning, online courses, skills",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({
@@ -22,6 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body className={inter.className}>
         <ClerkProvider>
           {children}
