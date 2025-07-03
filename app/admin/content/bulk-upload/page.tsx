@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Upload, FileText, Video, HelpCircle, CheckCircle, AlertCircle } from "lucide-react"
+import { Upload, FileText, Database, HelpCircle, CheckCircle, AlertCircle } from "lucide-react"
 
 interface UploadFile {
   id: string
@@ -49,7 +49,17 @@ export default function BulkUpload() {
   }
 
   const handleFiles = (files: File[]) => {
-    const newFiles: UploadFile[] = files.map((file) => ({
+    const supportedExtensions = [".txt", ".md", ".json", ".csv"]
+    const validFiles = files.filter((file) => {
+      const extension = "." + file.name.split(".").pop()?.toLowerCase()
+      return supportedExtensions.includes(extension)
+    })
+
+    if (validFiles.length !== files.length) {
+      alert(`Some files were skipped. Only ${supportedExtensions.join(", ")} files are supported.`)
+    }
+
+    const newFiles: UploadFile[] = validFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
       status: "pending",
@@ -131,9 +141,9 @@ export default function BulkUpload() {
   }
 
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith("video/")) return <Video className="w-6 h-6 text-blue-500" />
-    if (file.type.includes("pdf") || file.type.includes("document"))
-      return <FileText className="w-6 h-6 text-red-500" />
+    const extension = file.name.split(".").pop()?.toLowerCase()
+    if (extension === "json" || extension === "csv") return <Database className="w-6 h-6 text-green-500" />
+    if (extension === "txt" || extension === "md") return <FileText className="w-6 h-6 text-blue-500" />
     return <HelpCircle className="w-6 h-6 text-gray-500" />
   }
 
@@ -165,18 +175,24 @@ export default function BulkUpload() {
       {/* Upload Instructions */}
       <div className="card mb-6">
         <h2 className="text-xl font-semibold mb-4">📋 Upload Instructions</h2>
-        <div className="grid md:grid-cols-3 gap-4 text-sm">
+        <div className="grid md:grid-cols-2 gap-4 text-sm">
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-800 mb-2">📄 Text Lessons</h3>
-            <p className="text-blue-700">Upload .txt, .md, or .docx files. Content will be extracted automatically.</p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-purple-800 mb-2">🎥 Video Lessons</h3>
-            <p className="text-purple-700">Upload .mp4, .mov, or .avi files. Thumbnails will be generated.</p>
+            <p className="text-blue-700 mb-2">Upload .txt or .md files with lesson content.</p>
+            <ul className="text-blue-600 text-xs space-y-1">
+              <li>• Title will be extracted from filename</li>
+              <li>• Content will be used as lesson body</li>
+              <li>• Automatically set as TEXT type</li>
+            </ul>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">📊 Bulk Data</h3>
-            <p className="text-green-700">Upload .csv or .json files with lesson metadata.</p>
+            <h3 className="font-semibold text-green-800 mb-2">📊 Structured Data</h3>
+            <p className="text-green-700 mb-2">Upload .csv or .json files with lesson metadata.</p>
+            <ul className="text-green-600 text-xs space-y-1">
+              <li>• CSV: Headers in first row, data in subsequent rows</li>
+              <li>• JSON: Single object or array of lesson objects</li>
+              <li>• Include title, description, content, etc.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -194,11 +210,11 @@ export default function BulkUpload() {
         >
           <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Drop files here or click to browse</h3>
-          <p className="text-gray-600 mb-4">Supports: PDF, DOCX, TXT, MD, MP4, MOV, AVI, CSV, JSON</p>
+          <p className="text-gray-600 mb-4">Supported formats: .txt, .md, .json, .csv</p>
           <input
             type="file"
             multiple
-            accept=".pdf,.docx,.txt,.md,.mp4,.mov,.avi,.csv,.json"
+            accept=".txt,.md,.json,.csv"
             onChange={handleFileInput}
             className="hidden"
             id="file-upload"
