@@ -117,8 +117,8 @@ importers:
         specifier: latest
         version: 8.6.0(react@19.1.0)
       entry-loader:
-        specifier: ^0.2.0
-        version: 0.2.0(webpack@2.7.0)
+        specifier: ^0.1.0
+        version: 0.1.0(webpack@2.7.0)
       input-otp:
         specifier: latest
         version: 1.4.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -1305,9 +1305,6 @@ packages:
   big.js@3.2.0:
     resolution: {integrity: sha512-+hN/Zh2D08Mx65pZ/4g5bsmNiZUuChDiQfTUQ7qJr4/kuopCr88xZsAXv6mBoZEsUI4OuGHlX59qE94K2mMW8Q==}
 
-  big.js@5.2.2:
-    resolution: {integrity: sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==}
-
   binary-extensions@1.13.1:
     resolution: {integrity: sha512-Un7MIEDdUC5gNpcGDV97op1Ywk748MpHcFTHoYs6qnj1Z3j7I53VG3nwZhKzoBZmbdRNnb6WRdFlwl7tSDuZGw==}
     engines: {node: '>=0.10.0'}
@@ -1682,19 +1679,15 @@ packages:
     resolution: {integrity: sha512-knHEZMgs8BB+MInokmNTg/OyPlAddghe1YBgNwJBc5zsJi/uyIcXoSDsL/W9ymOsBoBGdPIHXYJ9+qKFwRwDng==}
     engines: {node: '>= 0.10'}
 
-  emojis-list@3.0.0:
-    resolution: {integrity: sha512-/kyM18EfinwXZbno9FyUGeFh87KC8HRQBQGildHZbEuRyWFOmv1U10o9BBp8XVZDVNNuQKyIGIu5ZYAAXJ0V2Q==}
-    engines: {node: '>= 4'}
-
   enhanced-resolve@3.4.1:
     resolution: {integrity: sha512-ZaAux1rigq1e2nQrztHn4h2ugvpzZxs64qneNah+8Mh/K0CRqJFJc+UoXnUsq+1yX+DmQFPPdVqboKAJ89e0Iw==}
     engines: {node: '>=4.3.0 <5.0.0 || >=5.10'}
 
-  entry-loader@0.2.0:
-    resolution: {integrity: sha512-WHIUbYKprviULB3jutj5k3saywn+gdI3WMIGZJQYHEbiC7x98yL/NJLdA1dF5FqG6lSs+sbOa9BCuVJ7T3UclA==}
+  entry-loader@0.1.0:
+    resolution: {integrity: sha512-4+h7GFWZlQrPpQv5F34G39Nc/2h1lhmTAAQU5kePEt0/GztmckEj4BG6I7QsWTuqFLLG7eHyodAip/YcOjOL8A==}
     deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
-      webpack: '>=0.9 ^2.2.0'
+      webpack: '>=0.9 <2'
 
   errno@0.1.8:
     resolution: {integrity: sha512-dJ6oBr5SQ1VSd9qkk7ByRgb/1SH4JZjCHSW/mr63/QcXO9zLVxvJ6Oy13nio03rxpSnVDDjFor75SjVeZWPW/A==}
@@ -2079,10 +2072,6 @@ packages:
     resolution: {integrity: sha512-4xrs1aW+6N5DalkqSVA8fxh458CXvR99WU8WLKmq4v8eWAL86Xo3BVqyd3SkA9wEVjCMqyvvRRkshAdOnBp5rw==}
     hasBin: true
 
-  json5@1.0.2:
-    resolution: {integrity: sha512-g1MWMLBiz8FKi1e4w0UyVL3w+iJceWAFBAaBnnGKOpNa5f8TLktkbre1+s6oICydWAm+HRUGTmI+//xv2hvXYA==}
-    hasBin: true
-
   jsonify@0.0.1:
     resolution: {integrity: sha512-2/Ki0GcmuqSrgFyelQq9M05y7PS0mEwuIzrf3f1fPqkVDVRvZrPZtVSMHxdgo8Aq0sxAOb/cr2aqqA3LeWHVPg==}
 
@@ -2123,10 +2112,6 @@ packages:
 
   loader-utils@0.2.17:
     resolution: {integrity: sha512-tiv66G0SmiOx+pLWMtGEkfSEejxvb6N6uRrQjfWJIT79W9GMpgKeCAmm9aVBKtd4WEgntciI8CsGqjpDoCWJug==}
-
-  loader-utils@1.4.2:
-    resolution: {integrity: sha512-I5d00Pd/jwMD2QCduo657+YM/6L3KZu++pmX9VFncxaxvHcru9jx1lBaFft+r4Mt2jK0Yhp41XlRAihzPxHNCg==}
-    engines: {node: '>=4.0.0'}
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
@@ -4292,8 +4277,6 @@ snapshots:
 
   big.js@3.2.0: {}
 
-  big.js@5.2.2: {}
-
   binary-extensions@1.13.1:
     optional: true
 
@@ -4572,7 +4555,7 @@ snapshots:
     dependencies:
       cipher-base: 1.0.6
       inherits: 2.0.4
-      ripemd160: 2.0.1
+      ripemd160: 2.0.2
       sha.js: 2.4.12
 
   create-hash@1.2.0:
@@ -4768,8 +4751,6 @@ snapshots:
 
   emojis-list@2.1.0: {}
 
-  emojis-list@3.0.0: {}
-
   enhanced-resolve@3.4.1:
     dependencies:
       graceful-fs: 4.2.11
@@ -4777,9 +4758,9 @@ snapshots:
       object-assign: 4.1.1
       tapable: 0.2.9
 
-  entry-loader@0.2.0(webpack@2.7.0):
+  entry-loader@0.1.0(webpack@2.7.0):
     dependencies:
-      loader-utils: 1.4.2
+      loader-utils: 0.2.17
       webpack: 2.7.0
 
   errno@0.1.8:
@@ -5185,10 +5166,6 @@ snapshots:
 
   json5@0.5.1: {}
 
-  json5@1.0.2:
-    dependencies:
-      minimist: 1.2.8
-
   jsonify@0.0.1: {}
 
   kind-of@3.2.2:
@@ -5229,12 +5206,6 @@ snapshots:
       emojis-list: 2.1.0
       json5: 0.5.1
       object-assign: 4.1.1
-
-  loader-utils@1.4.2:
-    dependencies:
-      big.js: 5.2.2
-      emojis-list: 3.0.0
-      json5: 1.0.2
 
   lodash@4.17.21: {}
 
