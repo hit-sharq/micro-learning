@@ -1,0 +1,39 @@
+.auth-container {
+  @apply min-h-screen flex items-center justify-center bg-purple-50 dark:bg-purple-900 p-4;
+}
+
+.auth-wrapper {
+  @apply max-w-md w-full bg-white dark:bg-purple-800 rounded-lg shadow-md p-8;
+}
+
+.auth-header {
+  @apply mb-6 text-center;
+}
+
+.auth-header h1 {
+  @apply text-3xl font-bold text-purple-900 dark:text-white;
+}
+
+.auth-header p {
+  @apply text-purple-600 dark:text-purple-300 mt-2;
+}
+
+.auth-card {
+  @apply bg-white dark:bg-purple-700 rounded-md p-6 shadow-sm;
+}
+
+.auth-title {
+  @apply text-xl font-semibold text-purple-900 dark:text-white;
+}
+
+.auth-subtitle {
+  @apply text-sm text-purple-600 dark:text-purple-300;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-md font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.btn-primary {
+  @apply bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500;
+}

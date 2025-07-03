@@ -1,11 +1,11 @@
 import { SignIn } from "@clerk/nextjs"
+import '../../../styles/auth.css'
 
 export default function SignInPage() {
   return (
     <div className="auth-container">
       <div className="auth-wrapper">
         <div className="auth-header">
-          <h1>Welcome Back</h1>
           <p>Sign in to continue your learning journey</p>
         </div>
         <SignIn

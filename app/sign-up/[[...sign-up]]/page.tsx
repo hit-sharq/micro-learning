@@ -1,4 +1,5 @@
 import { SignUp } from "@clerk/nextjs"
+import '../../../styles/auth.css'
 
 export default function SignUpPage() {
   return (
