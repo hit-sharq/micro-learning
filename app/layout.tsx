@@ -21,9 +21,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>
+    <html lang="en">
+      <body className={inter.className}>
+        <ClerkProvider>
           {children}
           <Toaster
             position="top-right"
@@ -36,8 +36,8 @@ export default function RootLayout({
             }}
           />
           <AchievementManager />
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   )
 }

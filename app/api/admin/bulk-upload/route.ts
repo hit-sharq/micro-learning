@@ -7,7 +7,9 @@ export async function POST(request: NextRequest) {
     await requireAdmin()
 
     const formData = await request.formData()
+    console.log("FormData keys:", Array.from(formData.keys()))
     const file = formData.get("file") as File
+    console.log("File present:", !!file)
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
     const lesson = await createLessonFromData(lessonData)
     return NextResponse.json({ lesson }, { status: 201 })
   } catch (error) {
-    console.error("Bulk upload error:", error)
+    console.error("Bulk upload error:", error instanceof Error ? error.stack || error.message : error)
     return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }
@@ -93,13 +95,38 @@ async function createLessonFromData(data: any) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
 
+  // Validate categoryId
+  let categoryId = Number.parseInt(data.categoryId)
+  if (isNaN(categoryId)) {
+    categoryId = 1
+  }
+
+  // Check if category exists
+  const categoryExists = await prisma.category.findUnique({
+    where: { id: categoryId },
+  })
+
+  if (!categoryExists) {
+    // Get first active category
+    const firstCategory = await prisma.category.findFirst({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    })
+
+    if (!firstCategory) {
+      throw new Error("No active categories found")
+    }
+
+    categoryId = firstCategory.id
+  }
+
   // Ensure required fields have defaults
   const lessonData = {
     title: data.title || "Untitled Lesson",
     description: data.description || "No description provided",
     content: data.content || "",
     type: (data.type || "TEXT").toUpperCase(),
-    categoryId: Number.parseInt(data.categoryId) || 1,
+    categoryId: categoryId,
     difficulty: (data.difficulty || "BEGINNER").toUpperCase(),
     estimatedDuration: Number.parseInt(data.estimatedDuration) || 5,
     tags: Array.isArray(data.tags) ? data.tags : data.tags ? data.tags.split(",").map((t: string) => t.trim()) : [],
