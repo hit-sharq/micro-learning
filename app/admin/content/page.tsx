@@ -153,7 +153,7 @@ export default function ContentManagement() {
       {/* Filters */}
       <div className="card mb-6 overflow-x-auto">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="min-w-[120px]">
+          <div className="min-w-0 flex-1">
             <label className="block text-sm font-medium mb-1">Status</label>
             <select
               className="form-select w-full"
@@ -165,7 +165,7 @@ export default function ContentManagement() {
               <option value="draft">Draft</option>
             </select>
           </div>
-          <div className="min-w-[140px]">
+          <div className="min-w-0 flex-1">
             <label className="block text-sm font-medium mb-1">Category</label>
             <select
               className="form-select w-full"
@@ -179,7 +179,7 @@ export default function ContentManagement() {
               <option value="Business">Business</option>
             </select>
           </div>
-          <div className="min-w-[120px]">
+          <div className="min-w-0 flex-1">
             <label className="block text-sm font-medium mb-1">Type</label>
             <select
               className="form-select w-full"
@@ -197,7 +197,7 @@ export default function ContentManagement() {
 
       {/* Content Table */}
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[600px]">
+        <table className="w-full min-w-[400px]">
           <thead>
             <tr className="border-b">
               <th className="text-left py-3 px-4">Lesson</th>
@@ -240,7 +240,7 @@ export default function ContentManagement() {
                 </td>
                 <td className="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">{new Date(lesson.updatedAt).toLocaleDateString()}</td>
                 <td className="py-3 px-4">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                     <Link href={`/admin/content/edit/${lesson.id}`} className="btn btn-sm btn-secondary whitespace-nowrap">
                       ✏️ Edit
                     </Link>
