@@ -70,8 +70,7 @@ pnpm dev
 Built with ❤️ by **Joshua Mwendwa** for [Vibe Coding Hackathon]  
 For questions or support, contact [ *leeroyjoshu@gmail.com/officialjoshuamwendwa@gmail.com*  or *https://github.com/hit-sharq*].
 
-## deployed project link: [https://microlearning-coach.vercel.app/](https://microlearning-coach
-
+## deployed project link:[ https://macro-learning-gyip.vercel.app/]
 ## LICENSE
 
 MIT License
