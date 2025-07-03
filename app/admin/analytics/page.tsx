@@ -39,6 +39,18 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     try {
       const response = await fetch(`/api/admin/analytics?range=${timeRange}`)
+      if (response.status === 401) {
+        setData(null)
+        setLoading(false)
+        alert("Unauthorized: Please log in to access analytics.")
+        return
+      }
+      if (response.status === 403) {
+        setData(null)
+        setLoading(false)
+        alert("Forbidden: You do not have permission to access analytics.")
+        return
+      }
       const analyticsData = await response.json()
       setData(analyticsData)
     } catch (error) {
@@ -90,26 +102,26 @@ export default function Analytics() {
       {/* Key Metrics */}
       <div className="stats-grid mb-8">
         <div className="stat-card">
-          <div className="stat-value">{data.userStats.totalUsers}</div>
+          <div className="stat-value">{data?.userStats?.totalUsers}</div>
           <div className="stat-label">Total Users</div>
-          <div className="text-xs text-green-600 mt-1">+{data.userStats.newUsersThisWeek} this week</div>
+          <div className="text-xs text-green-600 mt-1">+{data?.userStats?.newUsersThisWeek} this week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data.userStats.activeUsersToday}</div>
+          <div className="stat-value">{data?.userStats?.activeUsersToday}</div>
           <div className="stat-label">Active Today</div>
           <div className="text-xs text-gray-500 mt-1">
-            {Math.round((data.userStats.activeUsersToday / data.userStats.totalUsers) * 100)}% of total
+            {Math.round((data?.userStats?.activeUsersToday / data?.userStats?.totalUsers) * 100)}% of total
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data.userStats.retentionRate}%</div>
+          <div className="stat-value">{data?.userStats?.retentionRate}%</div>
           <div className="stat-label">Retention Rate</div>
           <div className="text-xs text-gray-500 mt-1">7-day retention</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data.lessonStats.completedLessons}</div>
+          <div className="stat-value">{data?.lessonStats?.completedLessons}</div>
           <div className="stat-label">Lessons Completed</div>
-          <div className="text-xs text-gray-500 mt-1">Avg: {data.lessonStats.averageCompletionTime}min</div>
+          <div className="text-xs text-gray-500 mt-1">Avg: {data?.lessonStats?.averageCompletionTime}min</div>
         </div>
       </div>
 

@@ -1,529 +1,625 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { toast } from "sonner"
+import { Plus, X, ArrowLeft, ArrowRight, Save, Eye } from "lucide-react"
 
-interface LessonForm {
-  title: string
-  description: string
-  content: string
-  type: "text" | "video" | "quiz"
-  categoryId: number
-  difficulty: "beginner" | "intermediate" | "advanced"
-  estimatedDuration: number
-  tags: string[]
-  videoUrl?: string
-  videoThumbnail?: string
-  quizData?: any
-  attachments?: any[]
-  metaDescription?: string
+interface Category {
+  id: number
+  name: string
+  description?: string
+  color?: string
 }
 
-const categories = [
-  { id: 1, name: "Programming" },
-  { id: 2, name: "Data Science" },
-  { id: 3, name: "Design" },
-  { id: 4, name: "Business" },
-  { id: 5, name: "Marketing" },
-]
+interface QuizQuestion {
+  id: string
+  question: string
+  type: "multiple-choice" | "true-false" | "short-answer"
+  options?: string[]
+  correctAnswer: string | number
+  explanation?: string
+}
 
-export default function CreateLesson() {
+export default function CreateLessonPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
-  const [form, setForm] = useState<LessonForm>({
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(false)
+  const [tags, setTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState("")
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([])
+
+  const [formData, setFormData] = useState({
     title: "",
     description: "",
     content: "",
-    type: "text",
-    categoryId: 1,
-    difficulty: "beginner",
-    estimatedDuration: 5,
-    tags: [],
+    type: "",
+    categoryId: "",
+    difficulty: "",
+    estimatedDuration: "",
+    videoUrl: "",
+    videoThumbnail: "",
     metaDescription: "",
+    isPublished: false,
   })
 
-  const [quizQuestions, setQuizQuestions] = useState([
-    {
-      id: "q1",
-      type: "multiple-choice",
-      question: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      explanation: "",
-      points: 10,
-    },
-  ])
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
-  const handleSubmit = async (isDraft = false) => {
-    setIsLoading(true)
-
+  const fetchCategories = async () => {
     try {
-      const lessonData = {
-        ...form,
-        quizData: form.type === "quiz" ? { questions: quizQuestions } : null,
-        isPublished: !isDraft,
-      }
-
-      const response = await fetch("/api/admin/lessons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lessonData),
-      })
-
+      const response = await fetch("/api/admin/categories")
       if (response.ok) {
         const data = await response.json()
-        router.push(`/admin/content/edit/${data.lesson.id}`)
-      } else {
-        throw new Error("Failed to create lesson")
+        setCategories(data.categories)
       }
     } catch (error) {
-      console.error("Error creating lesson:", error)
-      alert("Failed to create lesson. Please try again.")
-    } finally {
-      setIsLoading(false)
+      console.error("Error fetching categories:", error)
+      toast.error("Failed to load categories")
     }
   }
 
-  const addQuizQuestion = () => {
-    setQuizQuestions([
-      ...quizQuestions,
-      {
-        id: `q${quizQuestions.length + 1}`,
-        type: "multiple-choice",
-        question: "",
-        options: ["", "", "", ""],
-        correctAnswer: 0,
-        explanation: "",
-        points: 10,
-      },
-    ])
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const updateQuizQuestion = (index: number, field: string, value: any) => {
-    const updated = [...quizQuestions]
-    updated[index] = { ...updated[index], [field]: value }
-    setQuizQuestions(updated)
-  }
-
-  const removeQuizQuestion = (index: number) => {
-    setQuizQuestions(quizQuestions.filter((_, i) => i !== index))
-  }
-
-  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && e.currentTarget.value.trim()) {
-      e.preventDefault()
-      const newTag = e.currentTarget.value.trim()
-      if (!form.tags.includes(newTag)) {
-        setForm({ ...form, tags: [...form.tags, newTag] })
-      }
-      e.currentTarget.value = ""
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()])
+      setNewTag("")
     }
   }
 
   const removeTag = (tagToRemove: string) => {
-    setForm({ ...form, tags: form.tags.filter((tag) => tag !== tagToRemove) })
+    setTags(tags.filter((tag) => tag !== tagToRemove))
   }
 
+  const addQuizQuestion = () => {
+    const newQuestion: QuizQuestion = {
+      id: Date.now().toString(),
+      question: "",
+      type: "multiple-choice",
+      options: ["", "", "", ""],
+      correctAnswer: 0,
+      explanation: "",
+    }
+    setQuizQuestions([...quizQuestions, newQuestion])
+  }
+
+  const updateQuizQuestion = (id: string, field: string, value: any) => {
+    setQuizQuestions(quizQuestions.map((q) => (q.id === id ? { ...q, [field]: value } : q)))
+  }
+
+  const removeQuizQuestion = (id: string) => {
+    setQuizQuestions(quizQuestions.filter((q) => q.id !== id))
+  }
+
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        return formData.title && formData.description && formData.type && formData.categoryId
+      case 2:
+        return formData.difficulty && formData.estimatedDuration
+      case 3:
+        return formData.content
+      case 4:
+        return true // Optional step
+      default:
+        return true
+    }
+  }
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(currentStep + 1)
+    } else {
+      toast.error("Please fill in all required fields")
+    }
+  }
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1)
+  }
+
+  const handleSubmit = async (publish = false) => {
+    setLoading(true)
+    try {
+      const payload = {
+        ...formData,
+        tags,
+        quizData: quizQuestions.length > 0 ? { questions: quizQuestions } : null,
+        isPublished: publish,
+      }
+
+      const response = await fetch("/api/admin/lessons", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message)
+        router.push(`/admin/content/edit/${data.lesson.id}`)
+      } else {
+        toast.error(data.error || "Failed to create lesson")
+      }
+    } catch (error) {
+      console.error("Error creating lesson:", error)
+      toast.error("Failed to create lesson")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const steps = [
+    { number: 1, title: "Basic Info", description: "Title, description, and category" },
+    { number: 2, title: "Settings", description: "Difficulty, duration, and media" },
+    { number: 3, title: "Content", description: "Lesson content and materials" },
+    { number: 4, title: "Quiz", description: "Optional quiz questions" },
+    { number: 5, title: "Review", description: "Review and publish" },
+  ]
+
   return (
-    <div className="animate-fade-in max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Create New Lesson</h1>
-          <p className="text-gray-600">Build engaging educational content</p>
-        </div>
-        <Link href="/admin/content" className="btn btn-secondary">
-          ← Back to Content
-        </Link>
+    <div className="container mx-auto py-6 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Create New Lesson</h1>
+        <p className="text-muted-foreground">Create engaging learning content for your students</p>
       </div>
 
       {/* Progress Steps */}
-      <div className="card mb-6">
+      <div className="mb-8">
         <div className="flex items-center justify-between">
-          {[
-            { step: 1, title: "Basic Info", icon: "📝" },
-            { step: 2, title: "Content", icon: "📚" },
-            { step: 3, title: "Settings", icon: "⚙️" },
-            { step: 4, title: "Review", icon: "👀" },
-          ].map(({ step, title, icon }) => (
-            <div
-              key={step}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer ${
-                currentStep === step
-                  ? "bg-blue-100 text-blue-800"
-                  : currentStep > step
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-600"
-              }`}
-              onClick={() => setCurrentStep(step)}
-            >
-              <span>{icon}</span>
-              <span className="font-medium">{title}</span>
+          {steps.map((step, index) => (
+            <div key={step.number} className="flex items-center">
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                  currentStep >= step.number
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-muted-foreground text-muted-foreground"
+                }`}
+              >
+                {step.number}
+              </div>
+              <div className="ml-3 hidden sm:block">
+                <p
+                  className={`text-sm font-medium ${currentStep >= step.number ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  {step.title}
+                </p>
+                <p className="text-xs text-muted-foreground">{step.description}</p>
+              </div>
+              {index < steps.length - 1 && (
+                <div className={`w-12 h-0.5 mx-4 ${currentStep > step.number ? "bg-primary" : "bg-muted"}`} />
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="card">
-        {/* Step 1: Basic Information */}
-        {currentStep === 1 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Basic Information</h2>
+      <Card>
+        <CardContent className="p-6">
+          {/* Step 1: Basic Info */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+              </div>
 
-            <div className="grid grid-2 gap-6">
-              <div className="form-group">
-                <label className="form-label">Lesson Title *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="Enter lesson title"
-                  required
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Lesson Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
+                    placeholder="Enter lesson title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Lesson Type *</Label>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select lesson type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="READING">Reading</SelectItem>
+                      <SelectItem value="VIDEO">Video</SelectItem>
+                      <SelectItem value="INTERACTIVE">Interactive</SelectItem>
+                      <SelectItem value="QUIZ">Quiz</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="Brief description of the lesson"
+                  rows={3}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Lesson Type *</label>
-                <select
-                  className="form-input form-select"
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value as any })}
-                >
-                  <option value="text">📄 Text Lesson</option>
-                  <option value="video">🎥 Video Lesson</option>
-                  <option value="quiz">❓ Quiz</option>
-                </select>
+              <div className="space-y-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select value={formData.categoryId} onValueChange={(value) => handleInputChange("categoryId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          )}
 
-            <div className="form-group">
-              <label className="form-label">Description *</label>
-              <textarea
-                className="form-input form-textarea"
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Brief description of what students will learn"
-                required
-              />
-            </div>
+          {/* Step 2: Settings */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Lesson Settings</h2>
+              </div>
 
-            <div className="grid grid-3 gap-4">
-              <div className="form-group">
-                <label className="form-label">Category *</label>
-                <select
-                  className="form-input form-select"
-                  value={form.categoryId}
-                  onChange={(e) => setForm({ ...form, categoryId: Number.parseInt(e.target.value) })}
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Difficulty Level *</Label>
+                  <Select value={formData.difficulty} onValueChange={(value) => handleInputChange("difficulty", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BEGINNER">Beginner</SelectItem>
+                      <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
+                      <SelectItem value="ADVANCED">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Estimated Duration (minutes) *</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.estimatedDuration}
+                    onChange={(e) => handleInputChange("estimatedDuration", e.target.value)}
+                    placeholder="e.g., 15"
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              {formData.type === "VIDEO" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="videoUrl">Video URL</Label>
+                    <Input
+                      id="videoUrl"
+                      value={formData.videoUrl}
+                      onChange={(e) => handleInputChange("videoUrl", e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="videoThumbnail">Video Thumbnail URL</Label>
+                    <Input
+                      id="videoThumbnail"
+                      value={formData.videoThumbnail}
+                      onChange={(e) => handleInputChange("videoThumbnail", e.target.value)}
+                      placeholder="https://example.com/thumbnail.jpg"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                    </Badge>
                   ))}
-                </select>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Add a tag"
+                    onKeyPress={(e) => e.key === "Enter" && addTag()}
+                  />
+                  <Button type="button" onClick={addTag} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Difficulty *</label>
-                <select
-                  className="form-input form-select"
-                  value={form.difficulty}
-                  onChange={(e) => setForm({ ...form, difficulty: e.target.value as any })}
-                >
-                  <option value="beginner">🟢 Beginner</option>
-                  <option value="intermediate">🟡 Intermediate</option>
-                  <option value="advanced">🔴 Advanced</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Duration (minutes) *</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={form.estimatedDuration}
-                  onChange={(e) => setForm({ ...form, estimatedDuration: Number.parseInt(e.target.value) })}
-                  min="1"
-                  max="120"
+              <div className="space-y-2">
+                <Label htmlFor="metaDescription">Meta Description (SEO)</Label>
+                <Textarea
+                  id="metaDescription"
+                  value={formData.metaDescription}
+                  onChange={(e) => handleInputChange("metaDescription", e.target.value)}
+                  placeholder="Brief description for search engines"
+                  rows={2}
                 />
               </div>
             </div>
+          )}
 
-            <div className="form-group">
-              <label className="form-label">Tags</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Type a tag and press Enter"
-                onKeyDown={handleTagInput}
-              />
-              <div className="flex flex-wrap gap-2 mt-2">
-                {form.tags.map((tag) => (
-                  <span key={tag} className="badge badge-primary">
-                    {tag}
-                    <button onClick={() => removeTag(tag)} className="ml-2 text-xs hover:text-red-600">
-                      ×
-                    </button>
-                  </span>
-                ))}
+          {/* Step 3: Content */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Lesson Content</h2>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Step 2: Content */}
-        {currentStep === 2 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Lesson Content</h2>
-
-            {form.type === "text" && (
-              <div className="form-group">
-                <label className="form-label">Lesson Content *</label>
-                <textarea
-                  className="form-input form-textarea"
-                  rows={15}
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+              <div className="space-y-2">
+                <Label htmlFor="content">Content *</Label>
+                <Textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={(e) => handleInputChange("content", e.target.value)}
                   placeholder="Write your lesson content here. You can use Markdown formatting."
+                  rows={15}
+                  className="font-mono"
                 />
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-muted-foreground">
                   Supports Markdown formatting. Use **bold**, *italic*, `code`, and more.
                 </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {form.type === "video" && (
-              <div className="space-y-4">
-                <div className="form-group">
-                  <label className="form-label">Video URL *</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    value={form.videoUrl || ""}
-                    onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-                    placeholder="https://example.com/video.mp4"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Video Thumbnail URL</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    value={form.videoThumbnail || ""}
-                    onChange={(e) => setForm({ ...form, videoThumbnail: e.target.value })}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Additional Notes</label>
-                  <textarea
-                    className="form-input form-textarea"
-                    rows={5}
-                    value={form.content}
-                    onChange={(e) => setForm({ ...form, content: e.target.value })}
-                    placeholder="Additional notes or transcript for the video"
-                  />
-                </div>
+          {/* Step 4: Quiz */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Quiz Questions (Optional)</h2>
+                <Button onClick={addQuizQuestion} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Question
+                </Button>
               </div>
-            )}
 
-            {form.type === "quiz" && (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">Quiz Questions</h3>
-                  <button onClick={addQuizQuestion} className="btn btn-primary">
-                    ➕ Add Question
-                  </button>
+              {quizQuestions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No quiz questions added yet.</p>
+                  <p className="text-sm">Click "Add Question" to create interactive quiz content.</p>
                 </div>
-
-                {quizQuestions.map((question, index) => (
-                  <div key={question.id} className="border rounded-lg p-4 mb-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium">Question {index + 1}</h4>
-                      {quizQuestions.length > 1 && (
-                        <button onClick={() => removeQuizQuestion(index)} className="btn btn-sm btn-danger">
-                          🗑️ Remove
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Question Text *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={question.question}
-                        onChange={(e) => updateQuizQuestion(index, "question", e.target.value)}
-                        placeholder="Enter your question"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Answer Options *</label>
-                      {question.options.map((option, optIndex) => (
-                        <div key={optIndex} className="flex items-center gap-2 mb-2">
-                          <input
-                            type="radio"
-                            name={`correct-${index}`}
-                            checked={question.correctAnswer === optIndex}
-                            onChange={() => updateQuizQuestion(index, "correctAnswer", optIndex)}
-                          />
-                          <input
-                            type="text"
-                            className="form-input flex-1"
-                            value={option}
-                            onChange={(e) => {
-                              const newOptions = [...question.options]
-                              newOptions[optIndex] = e.target.value
-                              updateQuizQuestion(index, "options", newOptions)
-                            }}
-                            placeholder={`Option ${optIndex + 1}`}
+              ) : (
+                <div className="space-y-4">
+                  {quizQuestions.map((question, index) => (
+                    <Card key={question.id}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">Question {index + 1}</CardTitle>
+                          <Button variant="ghost" size="sm" onClick={() => removeQuizQuestion(question.id)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Question</Label>
+                          <Input
+                            value={question.question}
+                            onChange={(e) => updateQuizQuestion(question.id, "question", e.target.value)}
+                            placeholder="Enter your question"
                           />
                         </div>
-                      ))}
+
+                        <div className="space-y-2">
+                          <Label>Question Type</Label>
+                          <Select
+                            value={question.type}
+                            onValueChange={(value) => updateQuizQuestion(question.id, "type", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                              <SelectItem value="true-false">True/False</SelectItem>
+                              <SelectItem value="short-answer">Short Answer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {question.type === "multiple-choice" && (
+                          <div className="space-y-2">
+                            <Label>Options</Label>
+                            {question.options?.map((option, optionIndex) => (
+                              <div key={optionIndex} className="flex items-center gap-2">
+                                <Input
+                                  value={option}
+                                  onChange={(e) => {
+                                    const newOptions = [...(question.options || [])]
+                                    newOptions[optionIndex] = e.target.value
+                                    updateQuizQuestion(question.id, "options", newOptions)
+                                  }}
+                                  placeholder={`Option ${optionIndex + 1}`}
+                                />
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="radio"
+                                    name={`correct-${question.id}`}
+                                    checked={question.correctAnswer === optionIndex}
+                                    onChange={() => updateQuizQuestion(question.id, "correctAnswer", optionIndex)}
+                                  />
+                                  <Label className="text-sm">Correct</Label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {question.type === "true-false" && (
+                          <div className="space-y-2">
+                            <Label>Correct Answer</Label>
+                            <Select
+                              value={question.correctAnswer.toString()}
+                              onValueChange={(value) =>
+                                updateQuizQuestion(question.id, "correctAnswer", value === "true")
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="true">True</SelectItem>
+                                <SelectItem value="false">False</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {question.type === "short-answer" && (
+                          <div className="space-y-2">
+                            <Label>Correct Answer</Label>
+                            <Input
+                              value={question.correctAnswer.toString()}
+                              onChange={(e) => updateQuizQuestion(question.id, "correctAnswer", e.target.value)}
+                              placeholder="Enter the correct answer"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <Label>Explanation (Optional)</Label>
+                          <Textarea
+                            value={question.explanation || ""}
+                            onChange={(e) => updateQuizQuestion(question.id, "explanation", e.target.value)}
+                            placeholder="Explain why this is the correct answer"
+                            rows={2}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 5: Review */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Review & Publish</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Lesson Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <span className="font-medium">Title:</span> {formData.title}
                     </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Explanation</label>
-                      <textarea
-                        className="form-input form-textarea"
-                        rows={2}
-                        value={question.explanation}
-                        onChange={(e) => updateQuizQuestion(index, "explanation", e.target.value)}
-                        placeholder="Explain why this is the correct answer"
-                      />
+                    <div>
+                      <span className="font-medium">Type:</span> {formData.type}
                     </div>
-                  </div>
-                ))}
+                    <div>
+                      <span className="font-medium">Difficulty:</span> {formData.difficulty}
+                    </div>
+                    <div>
+                      <span className="font-medium">Duration:</span> {formData.estimatedDuration} minutes
+                    </div>
+                    <div>
+                      <span className="font-medium">Category:</span>{" "}
+                      {categories.find((c) => c.id.toString() === formData.categoryId)?.name}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Content Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <span className="font-medium">Content Length:</span> {formData.content.length} characters
+                    </div>
+                    <div>
+                      <span className="font-medium">Tags:</span> {tags.length} tags
+                    </div>
+                    <div>
+                      <span className="font-medium">Quiz Questions:</span> {quizQuestions.length} questions
+                    </div>
+                    {formData.videoUrl && (
+                      <div>
+                        <span className="font-medium">Video:</span> Included
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Step 3: Settings */}
-        {currentStep === 3 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Lesson Settings</h2>
-
-            <div className="form-group">
-              <label className="form-label">SEO Meta Description</label>
-              <textarea
-                className="form-input form-textarea"
-                rows={3}
-                value={form.metaDescription || ""}
-                onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-                placeholder="Brief description for search engines (150-160 characters)"
-                maxLength={160}
-              />
-              <p className="text-sm text-gray-500 mt-1">{(form.metaDescription || "").length}/160 characters</p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">File Attachments</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <div className="text-4xl mb-2">📎</div>
-                <p className="text-gray-600 mb-2">Drag and drop files here, or click to browse</p>
-                <button className="btn btn-secondary">Choose Files</button>
-                <p className="text-sm text-gray-500 mt-2">Supported: PDF, DOC, PPT, Images (Max 10MB each)</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Review */}
-        {currentStep === 4 && (
-          <div>
-            <h2 className="text-xl font-semibold mb-6">Review & Publish</h2>
-
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <h3 className="font-semibold mb-4">Lesson Preview</h3>
-              <div className="grid grid-2 gap-4 text-sm">
-                <div>
-                  <strong>Title:</strong> {form.title}
-                </div>
-                <div>
-                  <strong>Type:</strong> {form.type}
-                </div>
-                <div>
-                  <strong>Category:</strong> {categories.find((c) => c.id === form.categoryId)?.name}
-                </div>
-                <div>
-                  <strong>Difficulty:</strong> {form.difficulty}
-                </div>
-                <div>
-                  <strong>Duration:</strong> {form.estimatedDuration} minutes
-                </div>
-                <div>
-                  <strong>Tags:</strong> {form.tags.join(", ") || "None"}
-                </div>
-              </div>
-              <div className="mt-4">
-                <strong>Description:</strong>
-                <p className="text-gray-600 mt-1">{form.description}</p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="publish"
+                  checked={formData.isPublished}
+                  onCheckedChange={(checked) => handleInputChange("isPublished", checked)}
+                />
+                <Label htmlFor="publish">Publish immediately</Label>
               </div>
             </div>
+          )}
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h4 className="font-semibold text-blue-800 mb-2">📋 Pre-publish Checklist</h4>
-              <div className="space-y-2 text-sm">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  <span>Content is accurate and well-formatted</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  <span>All links and media are working</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  <span>Lesson meets quality standards</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  <span>Ready for student access</span>
-                </label>
-              </div>
+          {/* Navigation */}
+          <div className="flex justify-between pt-6 border-t">
+            <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+
+            <div className="flex gap-2">
+              {currentStep === 5 ? (
+                <>
+                  <Button variant="outline" onClick={() => handleSubmit(false)} disabled={loading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Draft
+                  </Button>
+                  <Button onClick={() => handleSubmit(true)} disabled={loading}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    {loading ? "Publishing..." : "Publish Lesson"}
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={nextStep} disabled={!validateStep(currentStep)}>
+                  Next
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
             </div>
           </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center pt-6 border-t">
-          <div>
-            {currentStep > 1 && (
-              <button onClick={() => setCurrentStep(currentStep - 1)} className="btn btn-secondary">
-                ← Previous
-              </button>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            {currentStep < 4 ? (
-              <button
-                onClick={() => setCurrentStep(currentStep + 1)}
-                className="btn btn-primary"
-                disabled={!form.title || !form.description}
-              >
-                Next →
-              </button>
-            ) : (
-              <>
-                <button onClick={() => handleSubmit(true)} disabled={isLoading} className="btn btn-secondary">
-                  💾 Save as Draft
-                </button>
-                <button onClick={() => handleSubmit(false)} disabled={isLoading} className="btn btn-primary">
-                  🚀 Publish Lesson
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

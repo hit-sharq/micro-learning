@@ -4,6 +4,8 @@ import { LessonsClient } from "./lessons-client"
 
 async function getLessonsData(userId?: string) {
   try {
+    console.log("Fetching lessons for user:", userId)
+
     const lessons = await prisma.lesson.findMany({
       where: { isPublished: true },
       include: {
@@ -16,6 +18,8 @@ async function getLessonsData(userId?: string) {
       },
       orderBy: { createdAt: "desc" },
     })
+
+    console.log(`Found ${lessons.length} published lessons`)
 
     return lessons.map((lesson) => ({
       id: lesson.id,
@@ -39,6 +43,8 @@ export default async function LessonsPage() {
   const { userId } = await auth()
   const lessons = await getLessonsData(userId || undefined)
 
+  console.log(`Rendering lessons page with ${lessons.length} lessons`)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -47,7 +53,17 @@ export default async function LessonsPage() {
           <p className="text-xl text-gray-600">Discover bite-sized lessons tailored to your learning goals</p>
         </div>
 
-        <LessonsClient lessons={lessons} />
+        {lessons.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">📚</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-2">No lessons available</h3>
+            <p className="text-gray-600 mb-6">There are no published lessons yet. Check back later!</p>
+          </div>
+        ) : (
+          <LessonsClient lessons={lessons} />
+        )}
       </div>
     </div>
   )

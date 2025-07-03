@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "12")
 
+    console.log("Fetching lessons with params:", { search, category, difficulty, type, page, limit })
+
     let lessons
 
     if (search) {
@@ -32,6 +34,8 @@ export async function GET(request: NextRequest) {
         where.type = type.toUpperCase()
       }
 
+      console.log("Database query where clause:", where)
+
       lessons = await prisma.lesson.findMany({
         where,
         include: {
@@ -49,6 +53,8 @@ export async function GET(request: NextRequest) {
         take: limit,
       })
     }
+
+    console.log(`Found ${lessons.length} lessons`)
 
     // Get user progress if authenticated
     const { userId } = await auth()

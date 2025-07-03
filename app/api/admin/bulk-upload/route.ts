@@ -1,93 +1,243 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { requireAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+
+interface LessonData {
+  title: string
+  description: string
+  content: string
+  type: string
+  categoryId: number
+  difficulty: string
+  estimatedDuration: number
+  tags?: string[]
+  videoUrl?: string
+  videoThumbnail?: string
+  quizData?: any
+  metaDescription?: string
+  isPublished?: boolean
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    // Check admin access first
+    await requireAdmin()
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const formData = await request.formData()
+    const files = formData.getAll("files") as File[]
+
+    if (!files || files.length === 0) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    const body = await request.json()
-    const { lessons } = body
-
-    if (!Array.isArray(lessons) || lessons.length === 0) {
-      return NextResponse.json({ error: "Invalid lessons data" }, { status: 400 })
-    }
+    console.log(`Processing ${files.length} files`)
 
     const results = {
-      success: 0,
+      successful: 0,
       failed: 0,
       errors: [] as string[],
+      lessons: [] as any[],
     }
 
-    for (const lessonData of lessons) {
-      try {
-        const {
-          title,
-          description,
-          content,
-          type,
-          categoryId,
-          difficulty,
-          estimatedDuration,
-          tags,
-          videoUrl,
-          videoThumbnail,
-          quizData,
-          metaDescription,
-        } = lessonData
+    // Get default category
+    const defaultCategory = await prisma.category.findFirst({
+      orderBy: { id: "asc" },
+    })
 
-        // Validate required fields
-        if (!title || !description || !content || !type || !categoryId || !difficulty || !estimatedDuration) {
-          results.failed++
-          results.errors.push(`Lesson "${title || "Unknown"}": Missing required fields`)
-          continue
+    if (!defaultCategory) {
+      return NextResponse.json({ error: "No categories found. Please create a category first." }, { status: 400 })
+    }
+
+    for (const file of files) {
+      try {
+        const content = await file.text()
+        const fileName = file.name
+        const fileExtension = fileName.split(".").pop()?.toLowerCase()
+
+        console.log(`Processing file: ${fileName} (${fileExtension})`)
+
+        let lessonsToCreate: LessonData[] = []
+
+        switch (fileExtension) {
+          case "txt":
+          case "md":
+            // Simple text/markdown file
+            lessonsToCreate = [
+              {
+                title: fileName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+                description: `Lesson created from ${fileName}`,
+                content: content,
+                type: "TEXT",
+                categoryId: defaultCategory.id,
+                difficulty: "BEGINNER",
+                estimatedDuration: Math.max(5, Math.ceil(content.length / 200)), // Rough reading time
+                tags: ["bulk-upload"],
+                isPublished: false,
+              },
+            ]
+            break
+
+          case "json":
+            try {
+              const jsonData = JSON.parse(content)
+              if (Array.isArray(jsonData)) {
+                lessonsToCreate = jsonData.map((lesson: any) => ({
+                  title: lesson.title || "Untitled Lesson",
+                  description: lesson.description || "No description provided",
+                  content: lesson.content || "",
+                  type: lesson.type?.toUpperCase() || "TEXT",
+                  categoryId: lesson.categoryId || defaultCategory.id,
+                  difficulty: lesson.difficulty?.toUpperCase() || "BEGINNER",
+                  estimatedDuration: lesson.estimatedDuration || 10,
+                  tags: lesson.tags || ["bulk-upload"],
+                  videoUrl: lesson.videoUrl,
+                  videoThumbnail: lesson.videoThumbnail,
+                  quizData: lesson.quizData,
+                  metaDescription: lesson.metaDescription,
+                  isPublished: lesson.isPublished || false,
+                }))
+              } else {
+                lessonsToCreate = [
+                  {
+                    title: jsonData.title || fileName.replace(/\.[^/.]+$/, ""),
+                    description: jsonData.description || "No description provided",
+                    content: jsonData.content || "",
+                    type: jsonData.type?.toUpperCase() || "TEXT",
+                    categoryId: jsonData.categoryId || defaultCategory.id,
+                    difficulty: jsonData.difficulty?.toUpperCase() || "BEGINNER",
+                    estimatedDuration: jsonData.estimatedDuration || 10,
+                    tags: jsonData.tags || ["bulk-upload"],
+                    videoUrl: jsonData.videoUrl,
+                    videoThumbnail: jsonData.videoThumbnail,
+                    quizData: jsonData.quizData,
+                    metaDescription: jsonData.metaDescription,
+                    isPublished: jsonData.isPublished || false,
+                  },
+                ]
+              }
+            } catch (parseError) {
+              results.failed++
+              results.errors.push(`${fileName}: Invalid JSON format`)
+              continue
+            }
+            break
+
+          case "csv":
+            try {
+              const lines = content.split("\n").filter((line) => line.trim())
+              if (lines.length < 2) {
+                results.failed++
+                results.errors.push(`${fileName}: CSV must have at least a header and one data row`)
+                continue
+              }
+
+              const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
+              const dataLines = lines.slice(1)
+
+              lessonsToCreate = dataLines.map((line) => {
+                const values = line.split(",").map((v) => v.trim().replace(/"/g, ""))
+                const lessonData: any = {}
+
+                headers.forEach((header, index) => {
+                  lessonData[header] = values[index] || ""
+                })
+
+                return {
+                  title: lessonData.title || "Untitled Lesson",
+                  description: lessonData.description || "No description provided",
+                  content: lessonData.content || "",
+                  type: lessonData.type?.toUpperCase() || "TEXT",
+                  categoryId: lessonData.categoryId ? Number.parseInt(lessonData.categoryId) : defaultCategory.id,
+                  difficulty: lessonData.difficulty?.toUpperCase() || "BEGINNER",
+                  estimatedDuration: lessonData.estimatedDuration ? Number.parseInt(lessonData.estimatedDuration) : 10,
+                  tags: lessonData.tags ? lessonData.tags.split(";") : ["bulk-upload"],
+                  videoUrl: lessonData.videoUrl,
+                  videoThumbnail: lessonData.videoThumbnail,
+                  metaDescription: lessonData.metaDescription,
+                  isPublished: lessonData.isPublished === "true",
+                }
+              })
+            } catch (parseError) {
+              results.failed++
+              results.errors.push(`${fileName}: Error parsing CSV`)
+              continue
+            }
+            break
+
+          default:
+            results.failed++
+            results.errors.push(`${fileName}: Unsupported file type`)
+            continue
         }
 
-        await prisma.lesson.create({
-          data: {
-            title,
-            description,
-            content,
-            type: type.toUpperCase(),
-            categoryId,
-            difficulty: difficulty.toUpperCase(),
-            estimatedDuration,
-            tags: tags || [],
-            videoUrl,
-            videoThumbnail,
-            quizData,
-            metaDescription,
-            isPublished: false, // Always create as draft for bulk upload
-            authorId: userId,
-          },
-        })
+        // Create lessons in database
+        for (const lessonData of lessonsToCreate) {
+          try {
+            // Generate unique slug
+            const baseSlug = lessonData.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "")
 
-        results.success++
-      } catch (error) {
+            let slug = baseSlug
+            let counter = 1
+            while (await prisma.lesson.findUnique({ where: { slug } })) {
+              slug = `${baseSlug}-${counter}`
+              counter++
+            }
+
+            const lesson = await prisma.lesson.create({
+              data: {
+                title: lessonData.title,
+                description: lessonData.description,
+                content: lessonData.content,
+                type: lessonData.type as any,
+                categoryId: lessonData.categoryId,
+                difficulty: lessonData.difficulty as any,
+                estimatedDuration: lessonData.estimatedDuration,
+                tags: lessonData.tags || [],
+                videoUrl: lessonData.videoUrl,
+                videoThumbnail: lessonData.videoThumbnail,
+                quizData: lessonData.quizData,
+                slug,
+                metaDescription: lessonData.metaDescription,
+                isPublished: lessonData.isPublished || false,
+                publishedAt: lessonData.isPublished ? new Date() : null,
+              },
+              include: {
+                category: true,
+              },
+            })
+
+            results.successful++
+            results.lessons.push(lesson)
+            console.log(`Created lesson: ${lesson.title}`)
+          } catch (dbError) {
+            console.error(`Database error for lesson ${lessonData.title}:`, dbError)
+            results.failed++
+            results.errors.push(`${lessonData.title}: Database error`)
+          }
+        }
+      } catch (fileError) {
+        console.error(`Error processing file ${file.name}:`, fileError)
         results.failed++
-        results.errors.push(`Lesson "${lessonData.title || "Unknown"}": ${error}`)
+        results.errors.push(`${file.name}: Processing error`)
       }
     }
 
+    console.log(`Bulk upload completed: ${results.successful} successful, ${results.failed} failed`)
+
     return NextResponse.json({
-      success: true,
+      message: `Bulk upload completed. ${results.successful} successful, ${results.failed} failed.`,
       results,
-      message: `Bulk upload completed: ${results.success} successful, ${results.failed} failed`,
     })
   } catch (error) {
-    console.error("Error in bulk upload:", error)
-    return NextResponse.json({ error: "Failed to process bulk upload" }, { status: 500 })
+    console.error("Bulk upload error:", error)
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to process bulk upload",
+      },
+      { status: error instanceof Error && error.message.includes("Unauthorized") ? 403 : 500 },
+    )
   }
 }

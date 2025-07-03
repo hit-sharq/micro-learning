@@ -1,5 +1,5 @@
 -- Seed achievements data
-INSERT INTO achievements (name, description, icon, type, criteria, points, is_active) VALUES
+INSERT INTO achievements (name, description, icon, type, criteria, points, "isActive") VALUES
 ('First Steps', 'Complete your first lesson', '🎯', 'COMPLETION', '{"lessonsRequired": 1}', 10, true),
 ('Getting Started', 'Complete 5 lessons', '🚀', 'COMPLETION', '{"lessonsRequired": 5}', 25, true),
 ('Dedicated Learner', 'Complete 25 lessons', '📚', 'COMPLETION', '{"lessonsRequired": 25}', 100, true),
@@ -18,3 +18,7 @@ INSERT INTO achievements (name, description, icon, type, criteria, points, is_ac
 ('Speed Learner', 'Complete 5 lessons in one day', '💨', 'SPECIAL', '{"dailyLessons": 5}', 75, true),
 ('Night Owl', 'Complete a lesson after 10 PM', '🦉', 'SPECIAL', '{"timeAfter": "22:00"}', 15, true),
 ('Early Bird', 'Complete a lesson before 7 AM', '🐦', 'SPECIAL', '{"timeBefore": "07:00"}', 15, true);
+('Speed Learner', 'Complete 5 lessons in one day', '💨', 'SPECIAL', '{"dailyLessons": 5}', 75, true),
+('Night Owl', 'Complete a lesson after 10 PM', '🦉', 'SPECIAL', '{"timeAfter": "22:00"}', 15, true),
+('Early Bird', 'Complete a lesson before 7 AM', '🐦', 'SPECIAL', '{"timeBefore": "07:00"}', 15, true);
+('Speed Learner', 'Complete 5 lessons in one day', '💨', 'SPECIAL', '{"dailyLessons": 5}', 75, true, NOW(), NOW()),

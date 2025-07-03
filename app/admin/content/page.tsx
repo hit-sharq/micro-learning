@@ -58,7 +58,7 @@ export default function ContentManagement() {
 
       if (response.ok) {
         setLessons(
-          lessons.map((lesson) => (lesson.id === lessonId ? { ...lesson, isPublished: !currentStatus } : lesson)),
+          lessons.map((lesson: Lesson) => (lesson.id === lessonId ? { ...lesson, isPublished: !currentStatus } : lesson)),
         )
       }
     } catch (error) {
@@ -77,7 +77,7 @@ export default function ContentManagement() {
       })
 
       if (response.ok) {
-        setLessons(lessons.filter((lesson) => lesson.id !== lessonId))
+        setLessons(lessons.filter((lesson: Lesson) => lesson.id !== lessonId))
       }
     } catch (error) {
       console.error("Failed to delete lesson:", error)
@@ -187,7 +187,7 @@ export default function ContentManagement() {
               </tr>
             </thead>
             <tbody>
-              {lessons.map((lesson) => (
+              {lessons.map((lesson: Lesson) => (
                 <tr key={lesson.id} className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div>

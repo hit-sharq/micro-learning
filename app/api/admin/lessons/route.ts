@@ -2,118 +2,142 @@ import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 
+async function requireAdmin() {
+  const { userId } = await auth()
+
+  if (!userId) {
+    throw new Error("Unauthorized")
+  }
+
+  const adminUserIds = process.env.ADMIN_USER_IDS?.split(",") || []
+  if (!adminUserIds.includes(userId)) {
+    throw new Error("Forbidden")
+  }
+
+  return userId
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get("status")
-    const category = searchParams.get("category")
-    const type = searchParams.get("type")
+    const search = searchParams.get("search") || ""
+    const status = searchParams.get("status") || "all"
+    const category = searchParams.get("category") || "all"
+    const type = searchParams.get("type") || "all"
+    const page = Number.parseInt(searchParams.get("page") || "1")
+    const limit = Number.parseInt(searchParams.get("limit") || "10")
 
     const where: any = {}
 
-    if (status && status !== "all") {
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ]
+    }
+
+    if (status !== "all") {
       where.isPublished = status === "published"
     }
 
-    if (category && category !== "all") {
+    if (category !== "all") {
       where.category = { name: category }
     }
 
-    if (type && type !== "all") {
+    if (type !== "all") {
       where.type = type.toUpperCase()
     }
 
-    const lessons = await prisma.lesson.findMany({
-      where,
-      include: {
-        category: true,
-        progress: {
-          select: {
-            completed: true,
-            id: true,
+    const [lessons, total] = await Promise.all([
+      prisma.lesson.findMany({
+        where,
+        include: {
+          category: true,
+          _count: {
+            select: {
+              progress: true,
+              bookmarks: true,
+            },
           },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-    })
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.lesson.count({ where }),
+    ])
 
     const lessonsWithStats = lessons.map((lesson) => ({
-      id: lesson.id,
-      title: lesson.title,
-      description: lesson.description,
-      type: lesson.type,
-      category: lesson.category.name,
-      difficulty: lesson.difficulty,
-      duration: lesson.estimatedDuration,
-      isPublished: lesson.isPublished,
-      createdAt: lesson.createdAt,
-      updatedAt: lesson.updatedAt,
-      viewCount: lesson.progress.length,
+      ...lesson,
+      viewCount: lesson._count.progress,
+      bookmarkCount: lesson._count.bookmarks,
       completionRate:
-        lesson.progress.length > 0
-          ? Math.round((lesson.progress.filter((p) => p.completed).length / lesson.progress.length) * 100)
-          : 0,
+        lesson._count.progress > 0 ? Math.round((lesson._count.progress / lesson._count.progress) * 100) : 0,
     }))
 
-    return NextResponse.json({ lessons: lessonsWithStats })
+    return NextResponse.json({
+      lessons: lessonsWithStats,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
     console.error("Error fetching admin lessons:", error)
+    if (error instanceof Error) {
+      if (error.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+      if (error.message === "Forbidden") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
     return NextResponse.json({ error: "Failed to fetch lessons" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    await requireAdmin()
 
     const body = await request.json()
+    console.log("Creating lesson with data:", body)
+
     const {
       title,
       description,
       content,
       type,
-      categoryId,
       difficulty,
       estimatedDuration,
+      categoryId,
       tags,
-      videoUrl,
-      videoThumbnail,
-      quizData,
-      metaDescription,
       isPublished,
+      videoUrl,
+      quizData,
     } = body
 
     // Validate required fields
-    if (!title || !description || !content || !type || !categoryId || !difficulty || !estimatedDuration) {
+    if (!title || !description || !content || !type || !difficulty || !categoryId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // Generate unique slug
+    const baseSlug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+
+    let slug = baseSlug
+    let counter = 1
+
+    while (await prisma.lesson.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`
+      counter++
     }
 
     const lesson = await prisma.lesson.create({
@@ -121,30 +145,34 @@ export async function POST(request: NextRequest) {
         title,
         description,
         content,
+        slug,
         type: type.toUpperCase(),
-        categoryId,
         difficulty: difficulty.toUpperCase(),
-        estimatedDuration,
+        estimatedDuration: Number(estimatedDuration),
+        categoryId: Number(categoryId),
         tags: tags || [],
-        videoUrl,
-        videoThumbnail,
-        quizData,
-        metaDescription,
-        isPublished: isPublished || false,
-        authorId: userId,
+        isPublished: Boolean(isPublished),
+        videoUrl: videoUrl || null,
+        quizData: quizData || null,
       },
       include: {
         category: true,
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      lesson,
-      message: isPublished ? "Lesson published successfully!" : "Lesson saved as draft!",
-    })
+    console.log("Created lesson:", lesson)
+
+    return NextResponse.json(lesson, { status: 201 })
   } catch (error) {
     console.error("Error creating lesson:", error)
+    if (error instanceof Error) {
+      if (error.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+      if (error.message === "Forbidden") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
     return NextResponse.json({ error: "Failed to create lesson" }, { status: 500 })
   }
 }

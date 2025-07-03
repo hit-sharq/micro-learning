@@ -1,39 +1,44 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
+import { NextResponse } from "next/server"
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"])
-const isAdminRoute = createRouteMatcher(["/admin(.*)"])
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/lessons",
+  "/lessons/(.*)",
+  "/api/lessons",
+  "/api/lessons/(.*)",
+  "/api/webhooks/(.*)",
+])
+
+const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"])
 
 export default clerkMiddleware(async (auth, req) => {
-  console.log("Middleware - Path:", req.nextUrl.pathname)
-
-  // Allow public routes
-  if (isPublicRoute(req)) {
-    console.log("Public route, allowing access")
-    return
-  }
-
-  // Get user info
   const { userId } = await auth()
-  console.log("Middleware - User ID:", userId)
 
-  if (!userId) {
-    console.log("No user ID, redirecting to sign-in")
-    return auth().redirectToSignIn()
-  }
-
-  // Check admin routes
+  // Handle admin routes
   if (isAdminRoute(req)) {
-    console.log("Admin route detected")
-    const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
-    console.log("Admin IDs:", adminIds)
-    console.log("Current user ID:", userId)
-
-    if (!adminIds.includes(userId)) {
-      console.log("User is not admin, redirecting to dashboard")
-      return Response.redirect(new URL("/dashboard", req.url))
+    if (!userId) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+      return NextResponse.redirect(new URL("/sign-in", req.url))
     }
 
-    console.log("Admin access granted")
+    // Check if user is admin
+    const adminUserIds = process.env.ADMIN_USER_IDS?.split(",") || []
+    if (!adminUserIds.includes(userId)) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL("/", req.url))
+    }
+  }
+
+  // Handle protected routes
+  if (!isPublicRoute(req) && !userId) {
+    return NextResponse.redirect(new URL("/sign-in", req.url))
   }
 })
 

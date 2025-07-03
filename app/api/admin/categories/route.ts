@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { requireAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
+    await requireAdmin()
+
     const categories = await prisma.category.findMany({
       include: {
         _count: {
@@ -12,54 +14,69 @@ export async function GET() {
           },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: { sortOrder: "asc" },
     })
 
     return NextResponse.json({ categories })
   } catch (error) {
     console.error("Error fetching categories:", error)
-    return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to fetch categories",
+      },
+      { status: error instanceof Error && error.message.includes("Unauthorized") ? 403 : 500 },
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    await requireAdmin()
 
     const body = await request.json()
-    const { name, description, color } = body
+    const { name, description, slug, isActive, sortOrder } = body
 
-    if (!name) {
-      return NextResponse.json({ error: "Category name is required" }, { status: 400 })
+    if (!name || !description) {
+      return NextResponse.json({ error: "Name and description are required" }, { status: 400 })
+    }
+
+    // Generate slug if not provided
+    const finalSlug =
+      slug ||
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+
+    // Check if slug is unique
+    const existingCategory = await prisma.category.findUnique({
+      where: { slug: finalSlug },
+    })
+
+    if (existingCategory) {
+      return NextResponse.json({ error: "Slug already exists" }, { status: 400 })
     }
 
     const category = await prisma.category.create({
       data: {
         name,
         description,
-        color: color || "#3B82F6",
+        slug: finalSlug,
+        isActive: isActive !== false,
+        sortOrder: sortOrder || 0,
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      category,
-      message: "Category created successfully!",
-    })
+    console.log(`Created category: ${category.name}`)
+
+    return NextResponse.json({ category }, { status: 201 })
   } catch (error) {
     console.error("Error creating category:", error)
-    return NextResponse.json({ error: "Failed to create category" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to create category",
+      },
+      { status: error instanceof Error && error.message.includes("Unauthorized") ? 403 : 500 },
+    )
   }
 }
