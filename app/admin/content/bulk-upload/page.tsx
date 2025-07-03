@@ -186,9 +186,19 @@ Your lesson content goes here...`
 
   return (
     <div className="container mx-auto py-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Bulk Upload Lessons</h1>
-        <p className="text-muted-foreground">Upload multiple lessons at once using various file formats</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Bulk Upload Lessons</h1>
+          <p className="text-muted-foreground">Upload multiple lessons at once using various file formats</p>
+        </div>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={() => window.history.back()}>
+            Back
+          </Button>
+          <Button variant="secondary" onClick={() => window.location.href = '/admin'}>
+            Back to Dashboard
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="upload" className="space-y-6">

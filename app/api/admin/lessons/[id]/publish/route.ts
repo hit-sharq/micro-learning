@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
-import { prisma } from "@/lib/prisma"
+
+const adminUserIds = process.env.ADMIN_USER_IDS?.split(",") || []
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -10,11 +11,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
+    if (!adminUserIds.includes(userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -26,6 +23,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const body = await request.json()
     const { isPublished } = body
+
+    // Assuming prisma is imported here
+    const { prisma } = await import("@/lib/prisma")
 
     const lesson = await prisma.lesson.update({
       where: { id: lessonId },

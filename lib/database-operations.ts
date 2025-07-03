@@ -121,7 +121,7 @@ export async function updateUserStreak(userId: string) {
     })
   }
 
-  const lastActivity = new Date(userStreak.lastActivityDate)
+  const lastActivity = new Date(userStreak.lastActivityDate ?? new Date())
   lastActivity.setHours(0, 0, 0, 0)
 
   let newCurrentStreak = userStreak.currentStreak
@@ -162,6 +162,15 @@ export async function getUserBookmarks(userId: string) {
 }
 
 export async function toggleBookmark(userId: string, lessonId: number) {
+  // Check if user exists
+  const userExists = await prisma.user.findUnique({
+    where: { clerkId: userId },
+  })
+
+  if (!userExists) {
+    throw new Error(`User with clerkId ${userId} does not exist`)
+  }
+
   const existing = await prisma.userBookmark.findUnique({
     where: {
       userId_lessonId: {
@@ -263,16 +272,16 @@ export async function checkAndUnlockAchievements(userId: string) {
 
     switch (achievement.type) {
       case "COMPLETION":
-        shouldUnlock = completedLessons >= achievement.criteria.lessonsRequired
+        shouldUnlock = completedLessons >= (achievement.criteria?.lessonsRequired ?? 0)
         break
       case "STREAK":
-        shouldUnlock = currentStreak >= achievement.criteria.streakRequired
+        shouldUnlock = currentStreak >= (achievement.criteria?.streakRequired ?? 0)
         break
       case "SCORE":
-        if (achievement.criteria.scoreRequired === 100) {
-          shouldUnlock = perfectScores >= achievement.criteria.countRequired
+        if (achievement.criteria?.scoreRequired === 100) {
+          shouldUnlock = perfectScores >= (achievement.criteria?.countRequired ?? 0)
         } else {
-          shouldUnlock = highScores >= achievement.criteria.countRequired
+          shouldUnlock = highScores >= (achievement.criteria?.countRequired ?? 0)
         }
         break
     }
@@ -289,7 +298,7 @@ export async function checkAndUnlockAchievements(userId: string) {
             name: achievement.name,
             description: achievement.description,
             icon: achievement.icon,
-            type: achievement.type,
+            type: achievement.type as any,
             criteria: achievement.criteria,
             points: achievement.points,
             isActive: true,

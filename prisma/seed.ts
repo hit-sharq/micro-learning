@@ -141,11 +141,50 @@ async function main() {
     },
   ]
 
+  const categories = [
+    {
+      name: 'Programming',
+      description: 'Lessons related to programming languages and software development',
+      slug: 'programming',
+      isActive: true,
+      sortOrder: 1,
+    },
+    {
+      name: 'Data Science',
+      description: 'Lessons on data analysis, machine learning, and statistics',
+      slug: 'data-science',
+      isActive: true,
+      sortOrder: 2,
+    },
+    {
+      name: 'Design',
+      description: 'Lessons on graphic design, UI/UX, and visual arts',
+      slug: 'design',
+      isActive: true,
+      sortOrder: 3,
+    },
+    {
+      name: 'Business',
+      description: 'Lessons on business strategy, marketing, and management',
+      slug: 'business',
+      isActive: true,
+      sortOrder: 4,
+    },
+  ]
+
   for (const achievement of achievements) {
     await prisma.achievement.upsert({
       where: { name: achievement.name },
       update: {},
       create: achievement,
+    })
+  }
+
+  for (const category of categories) {
+    await prisma.category.upsert({
+      where: { slug: category.slug },
+      update: {},
+      create: category,
     })
   }
 }

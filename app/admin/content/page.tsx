@@ -3,12 +3,25 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 
+interface Category {
+  id: number
+  name: string
+  description: string
+  color?: string
+  icon?: string
+  slug: string
+  isActive: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 interface Lesson {
   id: number
   title: string
   description: string
   type: string
-  category: string
+  category: Category | string
   difficulty: string
   duration: number
   isPublished: boolean
@@ -116,7 +129,18 @@ export default function ContentManagement() {
           <h1 className="text-3xl font-bold mb-2">Content Management</h1>
           <p className="text-gray-600">Create, edit, and manage all lessons</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <div className="flex gap-2">
+            <button
+              className="btn btn-outline"
+              onClick={() => window.history.back()}
+            >
+              Back
+            </button>
+            <Link href="/admin" className="btn btn-outline">
+              Back to Dashboard
+            </Link>
+          </div>
           <Link href="/admin/content/bulk-upload" className="btn btn-secondary">
             📁 Bulk Upload
           </Link>
@@ -203,7 +227,7 @@ export default function ContentManagement() {
                       {lesson.type}
                     </span>
                   </td>
-                  <td className="py-3 px-4">{lesson.category}</td>
+                  <td className="py-3 px-4">{typeof lesson.category === 'string' ? lesson.category : lesson.category?.name}</td>
                   <td className="py-3 px-4">
                     <span className={`badge ${lesson.isPublished ? "badge-success" : "badge-warning"}`}>
                       {lesson.isPublished ? "Published" : "Draft"}
