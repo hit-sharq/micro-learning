@@ -123,14 +123,14 @@ export default function ContentManagement() {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-fade-in px-4 sm:px-6 lg:px-8 max-w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Content Management</h1>
-          <p className="text-gray-600">Create, edit, and manage all lessons</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Content Management</h1>
+          <p className="text-gray-600 max-w-xs sm:max-w-full">Create, edit, and manage all lessons</p>
         </div>
-        <div className="flex gap-3 items-center">
-          <div className="flex gap-2">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex gap-2 flex-wrap">
             <button
               className="btn btn-outline"
               onClick={() => window.history.back()}
@@ -141,22 +141,22 @@ export default function ContentManagement() {
               Back to Dashboard
             </Link>
           </div>
-          <Link href="/admin/content/bulk-upload" className="btn btn-secondary">
+          <Link href="/admin/content/bulk-upload" className="btn btn-secondary whitespace-nowrap">
             📁 Bulk Upload
           </Link>
-          <Link href="/admin/content/create" className="btn btn-primary">
+          <Link href="/admin/content/create" className="btn btn-primary whitespace-nowrap">
             ➕ Create Lesson
           </Link>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex gap-4 items-center">
-          <div>
+      <div className="card mb-6 overflow-x-auto">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="min-w-[120px]">
             <label className="block text-sm font-medium mb-1">Status</label>
             <select
-              className="form-select"
+              className="form-select w-full"
               value={filter.status}
               onChange={(e) => setFilter({ ...filter, status: e.target.value })}
             >
@@ -165,10 +165,10 @@ export default function ContentManagement() {
               <option value="draft">Draft</option>
             </select>
           </div>
-          <div>
+          <div className="min-w-[140px]">
             <label className="block text-sm font-medium mb-1">Category</label>
             <select
-              className="form-select"
+              className="form-select w-full"
               value={filter.category}
               onChange={(e) => setFilter({ ...filter, category: e.target.value })}
             >
@@ -179,10 +179,10 @@ export default function ContentManagement() {
               <option value="Business">Business</option>
             </select>
           </div>
-          <div>
+          <div className="min-w-[120px]">
             <label className="block text-sm font-medium mb-1">Type</label>
             <select
-              className="form-select"
+              className="form-select w-full"
               value={filter.type}
               onChange={(e) => setFilter({ ...filter, type: e.target.value })}
             >
@@ -196,90 +196,90 @@ export default function ContentManagement() {
       </div>
 
       {/* Content Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">Lesson</th>
-                <th className="text-left py-3 px-4">Type</th>
-                <th className="text-left py-3 px-4">Category</th>
-                <th className="text-left py-3 px-4">Status</th>
-                <th className="text-left py-3 px-4">Performance</th>
-                <th className="text-left py-3 px-4">Updated</th>
-                <th className="text-left py-3 px-4">Actions</th>
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[600px]">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-3 px-4">Lesson</th>
+              <th className="text-left py-3 px-4">Type</th>
+              <th className="text-left py-3 px-4">Category</th>
+              <th className="text-left py-3 px-4">Status</th>
+              <th className="text-left py-3 px-4">Performance</th>
+              <th className="text-left py-3 px-4">Updated</th>
+              <th className="text-left py-3 px-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lessons.map((lesson: Lesson) => (
+              <tr key={lesson.id} className="border-b hover:bg-gray-50">
+                <td className="py-3 px-4 max-w-xs">
+                  <div>
+                    <div className="font-medium truncate">{lesson.title}</div>
+                    <div className="text-sm text-gray-500 truncate">{lesson.description}</div>
+                  </div>
+                </td>
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <span className="badge badge-primary">
+                    {lesson.type === "text" && "📄"}
+                    {lesson.type === "video" && "🎥"}
+                    {lesson.type === "quiz" && "❓"}
+                    {lesson.type}
+                  </span>
+                </td>
+                <td className="py-3 px-4 whitespace-nowrap">{typeof lesson.category === 'string' ? lesson.category : lesson.category?.name}</td>
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <span className={`badge ${lesson.isPublished ? "badge-success" : "badge-warning"}`}>
+                    {lesson.isPublished ? "Published" : "Draft"}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-sm whitespace-nowrap">
+                  <div>
+                    <div>👁️ {lesson.viewCount || 0} views</div>
+                    <div>✅ {lesson.completionRate || 0}% completion</div>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">{new Date(lesson.updatedAt).toLocaleDateString()}</td>
+                <td className="py-3 px-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/admin/content/edit/${lesson.id}`} className="btn btn-sm btn-secondary whitespace-nowrap">
+                      ✏️ Edit
+                    </Link>
+                    <button
+                      onClick={() => togglePublish(lesson.id, lesson.isPublished)}
+                      className={`btn btn-sm whitespace-nowrap ${lesson.isPublished ? "btn-warning" : "btn-success"}`}
+                    >
+                      {lesson.isPublished ? "📤 Unpublish" : "📢 Publish"}
+                    </button>
+                    <button
+                      onClick={() => duplicateLesson(lesson.id)}
+                      className="btn btn-sm whitespace-nowrap btn-info"
+                    >
+                      📄 Duplicate
+                    </button>
+                    <button
+                      onClick={() => deleteLesson(lesson.id)}
+                      className="btn btn-sm whitespace-nowrap btn-error"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {lessons.map((lesson: Lesson) => (
-                <tr key={lesson.id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div>
-                      <div className="font-medium">{lesson.title}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{lesson.description}</div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="badge badge-primary">
-                      {lesson.type === "text" && "📄"}
-                      {lesson.type === "video" && "🎥"}
-                      {lesson.type === "quiz" && "❓"}
-                      {lesson.type}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">{typeof lesson.category === 'string' ? lesson.category : lesson.category?.name}</td>
-                  <td className="py-3 px-4">
-                    <span className={`badge ${lesson.isPublished ? "badge-success" : "badge-warning"}`}>
-                      {lesson.isPublished ? "Published" : "Draft"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="text-sm">
-                      <div>👁️ {lesson.viewCount || 0} views</div>
-                      <div>✅ {lesson.completionRate || 0}% completion</div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">{new Date(lesson.updatedAt).toLocaleDateString()}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-2">
-                      <Link href={`/admin/content/edit/${lesson.id}`} className="btn btn-sm btn-secondary">
-                        ✏️ Edit
-                      </Link>
-                      <button
-                        onClick={() => togglePublish(lesson.id, lesson.isPublished)}
-                        className={`btn btn-sm ${lesson.isPublished ? "btn-warning" : "btn-success"}`}
-                      >
-                        {lesson.isPublished ? "📤 Unpublish" : "📢 Publish"}
-                      </button>
-                      <button
-                        onClick={() => duplicateLesson(lesson.id)}
-                        className="btn btn-sm btn-secondary"
-                        title="Duplicate lesson"
-                      >
-                        📋
-                      </button>
-                      <button onClick={() => deleteLesson(lesson.id)} className="btn btn-sm btn-danger">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {lessons.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold mb-2">No lessons found</h3>
-            <p className="text-gray-600 mb-4">Create your first lesson to get started</p>
-            <Link href="/admin/content/create" className="btn btn-primary">
-              Create Lesson
-            </Link>
-          </div>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {lessons.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📚</div>
+          <h3 className="text-xl font-semibold mb-2">No lessons found</h3>
+          <p className="text-gray-600 mb-4">Create your first lesson to get started</p>
+          <Link href="/admin/content/create" className="btn btn-primary">
+            Create Lesson
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
