@@ -39,8 +39,9 @@ export function BookmarkButton({ lessonId, className = "" }: BookmarkButtonProps
       })
 
       if (response.ok) {
-        setIsBookmarked(!isBookmarked)
-        toast.success(isBookmarked ? "Bookmark removed" : "Lesson bookmarked")
+        const data = await response.json()
+        setIsBookmarked(data.isBookmarked)
+        toast.success(data.isBookmarked ? "Lesson bookmarked" : "Bookmark removed")
       } else {
         throw new Error("Failed to toggle bookmark")
       }

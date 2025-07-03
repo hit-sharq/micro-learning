@@ -68,6 +68,16 @@ export async function updateUserProgress(
     quizAnswers?: any
   },
 ) {
+  // Check if user exists before upsert to avoid FK constraint error
+  const userExists = await prisma.user.findUnique({
+    where: { clerkId: userId },
+  })
+
+  if (!userExists) {
+    console.warn(`User with clerkId ${userId} does not exist`)
+    throw new Error(`User with clerkId ${userId} does not exist`)
+  }
+
   const progress = await prisma.userProgress.upsert({
     where: {
       userId_lessonId: {
@@ -168,7 +178,9 @@ export async function toggleBookmark(userId: string, lessonId: number) {
   })
 
   if (!userExists) {
-    throw new Error(`User with clerkId ${userId} does not exist`)
+    // Instead of throwing error, return false to indicate failure gracefully
+    console.warn(`User with clerkId ${userId} does not exist`)
+    return false
   }
 
   const existing = await prisma.userBookmark.findUnique({

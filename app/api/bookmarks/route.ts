@@ -1,16 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { NextRequest, NextResponse } from "next/server"
+import { getCurrentUser } from "@/lib/user"
 import { getUserBookmarks, toggleBookmark } from "@/lib/database-operations"
 
 export async function GET() {
   try {
-    const { userId } = await auth()
+    const user = await getCurrentUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const bookmarks = await getUserBookmarks(userId)
+    const bookmarks = await getUserBookmarks(user.clerkId)
 
     return NextResponse.json({ bookmarks })
   } catch (error) {
@@ -21,9 +21,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const user = await getCurrentUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -33,7 +33,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Lesson ID is required" }, { status: 400 })
     }
 
-    const isBookmarked = await toggleBookmark(userId, lessonId)
+    // Ensure user exists or create if missing
+    const userExists = await prisma.user.findUnique({
+      where: { clerkId: user.clerkId },
+    })
+
+    if (!userExists) {
+      const clerkUser = await fetch(`https://api.clerk.dev/v1/users/${user.clerkId}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+        },
+      }).then((res) => res.json())
+
+      await prisma.user.create({
+        data: {
+          clerkId: user.clerkId,
+          email: clerkUser.email_addresses[0]?.email_address || "",
+          name: `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim() || "User",
+        },
+      })
+    }
+
+    const isBookmarked = await toggleBookmark(user.clerkId, lessonId)
 
     return NextResponse.json({
       isBookmarked,

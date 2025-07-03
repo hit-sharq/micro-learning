@@ -1,21 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { getCurrentUser } from "@/lib/user"
 
 const adminUserIds = process.env.ADMIN_USER_IDS?.split(",") || []
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth()
+    const user = await getCurrentUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    if (!adminUserIds.includes(userId)) {
+    if (!adminUserIds.includes(user.clerkId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const lessonId = Number.parseInt(params.id)
+    const awaitedParams = await params
+    const lessonId = Number.parseInt(awaitedParams.id)
 
     if (isNaN(lessonId)) {
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })

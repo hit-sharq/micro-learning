@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server"
 import { updateUserProgress } from "@/lib/database-operations"
 import { prisma } from "@/lib/prisma" // Declare the prisma variable
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await auth()
 
@@ -11,6 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const params = await context.params
     const lessonId = Number.parseInt(params.id)
     const body = await request.json()
 
