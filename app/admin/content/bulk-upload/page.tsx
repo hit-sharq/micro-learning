@@ -76,7 +76,7 @@ export default function BulkUpload() {
         )
 
         // Simulate file processing with progress updates
-        for (let progress = 0; progress <= 100; progress += 10) {
+        for (let progress = 0; progress <= 90; progress += 10) {
           await new Promise((resolve) => setTimeout(resolve, 100))
           setUploadFiles((prev) => prev.map((f) => (f.id === uploadFile.id ? { ...f, progress } : f)))
         }
@@ -85,13 +85,16 @@ export default function BulkUpload() {
         const formData = new FormData()
         formData.append("file", uploadFile.file)
 
+        console.log(`Uploading file: ${uploadFile.file.name}`)
+
         const response = await fetch("/api/admin/bulk-upload", {
           method: "POST",
           body: formData,
         })
 
+        const result = await response.json()
+
         if (response.ok) {
-          const result = await response.json()
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
@@ -99,21 +102,23 @@ export default function BulkUpload() {
                     ...f,
                     status: "success",
                     progress: 100,
-                    lessonData: result.lesson,
+                    lessonData: result.lesson || result.lessons?.[0],
                   }
                 : f,
             ),
           )
         } else {
-          throw new Error("Upload failed")
+          throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`)
         }
       } catch (error) {
+        console.error(`Upload failed for ${uploadFile.file.name}:`, error)
         setUploadFiles((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id
               ? {
                   ...f,
                   status: "error",
+                  progress: 0,
                   error: error instanceof Error ? error.message : "Upload failed",
                 }
               : f,
