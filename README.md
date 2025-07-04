@@ -71,6 +71,9 @@ Built with ❤️ by **Joshua Mwendwa** for [Vibe Coding Hackathon]
 For questions or support, contact [ *leeroyjoshu@gmail.com/officialjoshuamwendwa@gmail.com*  or *https://github.com/hit-sharq*].
 
 ## deployed project link:[ https://macro-learning-gyip.vercel.app/]
+## canva project presentation: [https://www.canva.com/design/DAGsLolokto/jon976ObfLdSfvrNYMn7cQ/edit?utm_content=DAGsLolokto&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton]
+
+
 ## LICENSE
 
 MIT License
