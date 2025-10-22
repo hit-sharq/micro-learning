@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface LessonForm {
   title: string
@@ -22,18 +23,17 @@ interface LessonForm {
   isPublished: boolean
 }
 
-const categories = [
-  { id: 1, name: "Programming" },
-  { id: 2, name: "Data Science" },
-  { id: 3, name: "Design" },
-  { id: 4, name: "Business" },
-  { id: 5, name: "Marketing" },
-]
+interface Category {
+  id: number
+  name: string
+  description?: string
+}
 
 export default function EditLesson({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState<LessonForm>({
     title: "",
     description: "",
@@ -48,8 +48,22 @@ export default function EditLesson({ params }: { params: { id: string } }) {
   })
 
   useEffect(() => {
+    fetchCategories()
     fetchLesson()
   }, [params.id])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/admin/categories")
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories)
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      toast.error("Failed to load categories")
+    }
+  }
 
   const fetchLesson = async () => {
     try {

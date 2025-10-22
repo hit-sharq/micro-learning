@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface UploadResult {
   successful: number
@@ -18,11 +19,38 @@ interface UploadResult {
   lessons: any[]
 }
 
+interface Category {
+  id: number
+  name: string
+}
+
 export default function BulkUploadPage() {
   const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [results, setResults] = useState<UploadResult | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/admin/categories")
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories)
+        if (data.categories.length > 0) {
+          setSelectedCategoryId(data.categories[0].id.toString())
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      toast.error("Failed to load categories")
+    }
+  }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const validFiles = acceptedFiles.filter((file) => {
@@ -72,6 +100,9 @@ export default function BulkUploadPage() {
       files.forEach((file) => {
         formData.append("files", file)
       })
+      if (selectedCategoryId) {
+        formData.append("categoryId", selectedCategoryId)
+      }
 
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -195,7 +226,7 @@ Your lesson content goes here...`
           <Button variant="outline" onClick={() => window.history.back()}>
             Back
           </Button>
-          <Button variant="secondary" onClick={() => window.location.href = '/admin'}>
+          <Button variant="secondary" onClick={() => (window.location.href = "/admin")}>
             Back to Dashboard
           </Button>
         </div>
@@ -209,6 +240,29 @@ Your lesson content goes here...`
         </TabsList>
 
         <TabsContent value="upload" className="space-y-6">
+          {categories.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Category</CardTitle>
+                <CardDescription>Choose a default category for uploaded lessons</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+          )}
+
           {/* File Upload Area */}
           <Card>
             <CardHeader>

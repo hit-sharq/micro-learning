@@ -175,9 +175,20 @@ export default function CreateLessonPage() {
 
   return (
     <div className="container mx-auto py-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Create New Lesson</h1>
-        <p className="text-muted-foreground">Create engaging learning content for your students</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Create New Lesson</h1>
+          <p className="text-muted-foreground">Create engaging learning content for your students</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <Button variant="destructive" onClick={() => router.push("/admin/content")}>
+            Quit
+          </Button>
+        </div>
       </div>
 
       {/* Progress Steps */}
@@ -593,10 +604,15 @@ export default function CreateLessonPage() {
 
           {/* Navigation */}
           <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              <Button variant="ghost" onClick={() => router.push("/admin/content")}>
+                Quit
+              </Button>
+            </div>
 
             <div className="flex gap-2">
               {currentStep === 5 ? (
