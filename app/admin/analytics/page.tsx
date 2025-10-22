@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { BackButton } from "@/components/back-button"
 
 interface AnalyticsData {
   userStats: {
@@ -30,7 +31,7 @@ interface AnalyticsData {
 export default function Analytics() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState("7d") // 7d, 30d, 90d
+  const [timeRange, setTimeRange] = useState("7d")
 
   useEffect(() => {
     fetchAnalytics()
@@ -84,14 +85,19 @@ export default function Analytics() {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-fade-in px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Platform Analytics</h1>
-          <p className="text-gray-600">Detailed insights into platform performance</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Platform Analytics</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Detailed insights into platform performance</p>
         </div>
-        <div>
-          <select className="form-select" value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <BackButton href="/admin" />
+          <select
+            className="form-select flex-1 sm:flex-none"
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+          >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
@@ -100,47 +106,47 @@ export default function Analytics() {
       </div>
 
       {/* Key Metrics */}
-      <div className="stats-grid mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="stat-card">
-          <div className="stat-value">{data?.userStats?.totalUsers}</div>
+          <div className="stat-value text-2xl sm:text-3xl">{data?.userStats?.totalUsers}</div>
           <div className="stat-label">Total Users</div>
           <div className="text-xs text-green-600 mt-1">+{data?.userStats?.newUsersThisWeek} this week</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data?.userStats?.activeUsersToday}</div>
+          <div className="stat-value text-2xl sm:text-3xl">{data?.userStats?.activeUsersToday}</div>
           <div className="stat-label">Active Today</div>
           <div className="text-xs text-gray-500 mt-1">
             {Math.round((data?.userStats?.activeUsersToday / data?.userStats?.totalUsers) * 100)}% of total
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data?.userStats?.retentionRate}%</div>
+          <div className="stat-value text-2xl sm:text-3xl">{data?.userStats?.retentionRate}%</div>
           <div className="stat-label">Retention Rate</div>
           <div className="text-xs text-gray-500 mt-1">7-day retention</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{data?.lessonStats?.completedLessons}</div>
+          <div className="stat-value text-2xl sm:text-3xl">{data?.lessonStats?.completedLessons}</div>
           <div className="stat-label">Lessons Completed</div>
           <div className="text-xs text-gray-500 mt-1">Avg: {data?.lessonStats?.averageCompletionTime}min</div>
         </div>
       </div>
 
-      <div className="grid grid-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Daily Active Users Chart */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-xl font-semibold">Daily Active Users</h3>
+            <h3 className="text-lg sm:text-xl font-semibold">Daily Active Users</h3>
           </div>
-          <div className="h-64 flex items-end justify-between gap-2 p-4">
+          <div className="h-48 sm:h-64 flex items-end justify-between gap-1 sm:gap-2 p-4 overflow-x-auto">
             {data.engagementStats.dailyActiveUsers.map((day, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
+              <div key={index} className="flex flex-col items-center flex-1 min-w-[30px]">
                 <div
                   className="bg-blue-500 w-full rounded-t"
                   style={{
-                    height: `${(day.count / Math.max(...data.engagementStats.dailyActiveUsers.map((d) => d.count))) * 200}px`,
+                    height: `${(day.count / Math.max(...data.engagementStats.dailyActiveUsers.map((d) => d.count))) * 160}px`,
                   }}
                 />
-                <div className="text-xs text-gray-500 mt-2 transform -rotate-45">
+                <div className="text-xs text-gray-500 mt-2 whitespace-nowrap">
                   {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </div>
               </div>
@@ -151,18 +157,18 @@ export default function Analytics() {
         {/* Lesson Completions Chart */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-xl font-semibold">Lesson Completions</h3>
+            <h3 className="text-lg sm:text-xl font-semibold">Lesson Completions</h3>
           </div>
-          <div className="h-64 flex items-end justify-between gap-2 p-4">
+          <div className="h-48 sm:h-64 flex items-end justify-between gap-1 sm:gap-2 p-4 overflow-x-auto">
             {data.engagementStats.lessonCompletions.map((day, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
+              <div key={index} className="flex flex-col items-center flex-1 min-w-[30px]">
                 <div
                   className="bg-green-500 w-full rounded-t"
                   style={{
-                    height: `${(day.count / Math.max(...data.engagementStats.lessonCompletions.map((d) => d.count))) * 200}px`,
+                    height: `${(day.count / Math.max(...data.engagementStats.lessonCompletions.map((d) => d.count))) * 160}px`,
                   }}
                 />
-                <div className="text-xs text-gray-500 mt-2 transform -rotate-45">
+                <div className="text-xs text-gray-500 mt-2 whitespace-nowrap">
                   {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </div>
               </div>
@@ -171,26 +177,26 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="grid grid-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Popular Lessons */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-xl font-semibold">Most Popular Lessons</h3>
+            <h3 className="text-lg sm:text-xl font-semibold">Most Popular Lessons</h3>
           </div>
           <div className="space-y-3">
             {data.lessonStats.popularLessons.map((lesson, index) => (
-              <div key={lesson.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
-                  <div>
-                    <div className="font-medium">{lesson.title}</div>
-                    <div className="text-sm text-gray-500">
+              <div key={lesson.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-lg font-bold text-gray-400 flex-shrink-0">#{index + 1}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium truncate text-sm sm:text-base">{lesson.title}</div>
+                    <div className="text-xs sm:text-sm text-gray-500 truncate">
                       {lesson.completions} completions • {lesson.averageScore}% avg score
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600">{lesson.completions}</div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">{lesson.completions}</div>
                 </div>
               </div>
             ))}
@@ -200,17 +206,17 @@ export default function Analytics() {
         {/* Streak Distribution */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-xl font-semibold">Learning Streaks</h3>
+            <h3 className="text-lg sm:text-xl font-semibold">Learning Streaks</h3>
           </div>
           <div className="space-y-3">
             {data.engagementStats.streakData.map((streak, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm">
+              <div key={index} className="flex items-center justify-between gap-2">
+                <span className="text-xs sm:text-sm flex-shrink-0">
                   {streak.streakLength === 0
                     ? "No streak"
                     : `${streak.streakLength} day${streak.streakLength > 1 ? "s" : ""}`}
                 </span>
-                <div className="flex items-center gap-2 flex-1 mx-4">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-orange-500 h-2 rounded-full"
@@ -219,7 +225,7 @@ export default function Analytics() {
                       }}
                     />
                   </div>
-                  <span className="text-sm font-medium">{streak.userCount}</span>
+                  <span className="text-xs sm:text-sm font-medium flex-shrink-0">{streak.userCount}</span>
                 </div>
               </div>
             ))}

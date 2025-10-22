@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { BackButton } from "@/components/back-button"
 
 interface Announcement {
   id: number
@@ -159,44 +160,51 @@ export default function AnnouncementManagement() {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-fade-in px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Announcements</h1>
-          <p className="text-gray-600">Create and manage platform announcements</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Announcements</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Create and manage platform announcements</p>
         </div>
-        <button onClick={() => setShowCreateForm(true)} className="btn btn-primary">
-          📢 Create Announcement
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <BackButton href="/admin" />
+          <button onClick={() => setShowCreateForm(true)} className="btn btn-primary whitespace-nowrap">
+            Create Announcement
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="stats-grid mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="stat-card">
-          <div className="stat-value">{announcements.length}</div>
+          <div className="stat-value text-2xl sm:text-3xl">{announcements.length}</div>
           <div className="stat-label">Total Announcements</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{announcements.filter((a) => a.isActive).length}</div>
+          <div className="stat-value text-2xl sm:text-3xl">{announcements.filter((a) => a.isActive).length}</div>
           <div className="stat-label">Active</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{announcements.reduce((sum, a) => sum + a.viewCount, 0)}</div>
+          <div className="stat-value text-2xl sm:text-3xl">
+            {announcements.reduce((sum, a) => sum + a.viewCount, 0)}
+          </div>
           <div className="stat-label">Total Views</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{announcements.reduce((sum, a) => sum + a.clickCount, 0)}</div>
+          <div className="stat-value text-2xl sm:text-3xl">
+            {announcements.reduce((sum, a) => sum + a.clickCount, 0)}
+          </div>
           <div className="stat-label">Total Clicks</div>
         </div>
       </div>
 
       {/* Create Form Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Create New Announcement</h2>
-              <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-gray-700">
+              <h2 className="text-lg sm:text-xl font-bold">Create New Announcement</h2>
+              <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-gray-700 text-2xl">
                 ✕
               </button>
             </div>
@@ -224,7 +232,7 @@ export default function AnnouncementManagement() {
                 />
               </div>
 
-              <div className="grid grid-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Type</label>
                   <select
@@ -268,7 +276,7 @@ export default function AnnouncementManagement() {
                 </select>
               </div>
 
-              <div className="grid grid-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Publish At</label>
                   <input
@@ -301,7 +309,7 @@ export default function AnnouncementManagement() {
                 </label>
               </div>
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-3 justify-end flex-wrap">
                 <button type="button" onClick={() => setShowCreateForm(false)} className="btn btn-secondary">
                   Cancel
                 </button>
@@ -318,19 +326,21 @@ export default function AnnouncementManagement() {
       <div className="space-y-4">
         {announcements.map((announcement) => (
           <div key={announcement.id} className="card">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">{getTypeIcon(announcement.type)}</span>
-                  <h3 className="text-lg font-semibold">{announcement.title}</h3>
-                  <span className={`badge ${getPriorityColor(announcement.priority)}`}>{announcement.priority}</span>
-                  {announcement.isDraft && <span className="badge badge-warning">Draft</span>}
-                  {!announcement.isActive && <span className="badge badge-secondary">Inactive</span>}
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-xl sm:text-2xl">{getTypeIcon(announcement.type)}</span>
+                  <h3 className="text-base sm:text-lg font-semibold truncate">{announcement.title}</h3>
+                  <span className={`badge text-xs ${getPriorityColor(announcement.priority)}`}>
+                    {announcement.priority}
+                  </span>
+                  {announcement.isDraft && <span className="badge badge-warning text-xs">Draft</span>}
+                  {!announcement.isActive && <span className="badge badge-secondary text-xs">Inactive</span>}
                 </div>
 
-                <p className="text-gray-600 mb-3">{announcement.content}</p>
+                <p className="text-gray-600 mb-3 text-sm line-clamp-2">{announcement.content}</p>
 
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 flex-wrap">
                   <span>👥 {announcement.targetAudience.join(", ")}</span>
                   <span>👁️ {announcement.viewCount} views</span>
                   <span>👆 {announcement.clickCount} clicks</span>
@@ -341,18 +351,21 @@ export default function AnnouncementManagement() {
                 </div>
               </div>
 
-              <div className="flex gap-2 ml-4">
-                <Link href={`/admin/announcements/edit/${announcement.id}`} className="btn btn-sm btn-secondary">
-                  ✏️ Edit
+              <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+                <Link
+                  href={`/admin/announcements/edit/${announcement.id}`}
+                  className="btn btn-sm btn-secondary text-xs"
+                >
+                  Edit
                 </Link>
                 <button
                   onClick={() => toggleAnnouncementStatus(announcement.id, announcement.isActive)}
-                  className={`btn btn-sm ${announcement.isActive ? "btn-warning" : "btn-success"}`}
+                  className={`btn btn-sm text-xs ${announcement.isActive ? "btn-warning" : "btn-success"}`}
                 >
-                  {announcement.isActive ? "🚫 Deactivate" : "✅ Activate"}
+                  {announcement.isActive ? "Deactivate" : "Activate"}
                 </button>
-                <button onClick={() => deleteAnnouncement(announcement.id)} className="btn btn-sm btn-danger">
-                  🗑️
+                <button onClick={() => deleteAnnouncement(announcement.id)} className="btn btn-sm btn-danger text-xs">
+                  Delete
                 </button>
               </div>
             </div>
@@ -361,9 +374,9 @@ export default function AnnouncementManagement() {
 
         {announcements.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📢</div>
-            <h3 className="text-xl font-semibold mb-2">No announcements yet</h3>
-            <p className="text-gray-600 mb-4">Create your first announcement to communicate with users</p>
+            <div className="text-4xl sm:text-6xl mb-4">📢</div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">No announcements yet</h3>
+            <p className="text-gray-600 text-sm mb-4">Create your first announcement to communicate with users</p>
             <button onClick={() => setShowCreateForm(true)} className="btn btn-primary">
               Create Announcement
             </button>
