@@ -10,11 +10,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
+    const adminUserIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+    if (!adminUserIds.includes(userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -44,10 +41,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         tags: originalLesson.tags,
         videoUrl: originalLesson.videoUrl,
         videoThumbnail: originalLesson.videoThumbnail,
-        quizData: originalLesson.quizData,
+        quizData: originalLesson.quizData as any,
         metaDescription: originalLesson.metaDescription,
         isPublished: false, // Always create as draft
-        authorId: userId,
+        createdBy: userId,
+        slug: `${originalLesson.slug}-copy-${Date.now()}`,
       },
       include: {
         category: true,

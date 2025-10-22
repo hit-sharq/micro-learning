@@ -10,11 +10,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
+    const adminUserIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+    if (!adminUserIds.includes(userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -29,6 +26,7 @@ export async function GET() {
           where: { completed: true },
           select: { id: true },
         },
+        streaks: true,
       },
     })
 
@@ -38,7 +36,7 @@ export async function GET() {
     const csvRows = users
       .map(
         (user) =>
-          `${user.id},"${user.name || ""}","${user.email}","${user.role}","${user.isActive ? "Active" : "Inactive"}","${user.createdAt.toISOString()}","${user._count.progress}","${user.progress.length}","${user.currentStreak || 0}","${user.longestStreak || 0}"`,
+          `${user.id},"${user.name || ""}","${user.email}","${user.role}","${user.isActive ? "Active" : "Inactive"}","${user.createdAt.toISOString()}","${user._count.progress}","${user.progress.length}","${user.streaks?.currentStreak || 0}","${user.streaks?.longestStreak || 0}"`,
       )
       .join("\n")
 

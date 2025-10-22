@@ -10,12 +10,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    })
-
-    if (!user || user.role !== "ADMIN") {
+    const adminUserIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+    if (!adminUserIds.includes(userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -65,6 +61,7 @@ export async function GET(request: Request) {
           where: { completed: true },
           select: { id: true },
         },
+        streaks: true,
       },
       orderBy: { createdAt: "desc" },
     })
@@ -80,8 +77,8 @@ export async function GET(request: Request) {
       createdAt: user.createdAt,
       totalLessons: user._count.progress,
       completedLessons: user.progress.length,
-      currentStreak: user.currentStreak || 0,
-      longestStreak: user.longestStreak || 0,
+      currentStreak: user.streaks?.currentStreak || 0,
+      longestStreak: user.streaks?.longestStreak || 0,
     }))
 
     return NextResponse.json({ users: usersWithStats })
