@@ -3,7 +3,7 @@
 import type React from "react"
 
 import Link from "next/link"
-import { Linkedin, Twitter, Github, Instagram } from "lucide-react"
+import { Linkedin, Twitter, Github, Instagram, BookOpen, Briefcase } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -12,6 +12,7 @@ import { toast } from "sonner"
 export function Footer() {
   const [email, setEmail] = useState("")
   const [subscribing, setSubscribing] = useState(false)
+  const [activeTab, setActiveTab] = useState<"product" | "company" | "legal">("product")
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,8 +36,41 @@ export function Footer() {
 
   const currentYear = new Date().getFullYear()
 
+  const tabs = [
+    {
+      id: "product",
+      label: "Product",
+      links: [
+        { label: "Browse Lessons", href: "/lessons" },
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Achievements", href: "/achievements" },
+        { label: "Progress Tracking", href: "/progress" },
+      ],
+    },
+    {
+      id: "company",
+      label: "Company",
+      links: [
+        { label: "About Us", href: "/about" },
+        { label: "Blog", href: "/blog", icon: BookOpen },
+        { label: "Careers", href: "/careers", icon: Briefcase },
+        { label: "Contact", href: "/contact" },
+      ],
+    },
+    {
+      id: "legal",
+      label: "Legal",
+      links: [
+        { label: "Privacy Policy", href: "/privacy" },
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Cookie Policy", href: "/cookies" },
+        { label: "Accessibility", href: "/accessibility" },
+      ],
+    },
+  ]
+
   return (
-    <footer className="bg-slate-900 text-slate-100 border-t border-slate-800">
+    <footer className="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 border-t border-slate-800">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
@@ -88,85 +122,61 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Product Links */}
-          <div>
-            <h3 className="font-semibold text-white mb-4">Product</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/lessons" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Browse Lessons
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/achievements" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Achievements
-                </Link>
-              </li>
-              <li>
-                <Link href="/progress" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Progress Tracking
-                </Link>
-              </li>
-            </ul>
+          {/* Desktop View - Show all tabs */}
+          <div className="hidden lg:grid lg:col-span-3 grid-cols-3 gap-8">
+            {tabs.map((tab) => (
+              <div key={tab.id}>
+                <h3 className="font-semibold text-white mb-4">{tab.label}</h3>
+                <ul className="space-y-2">
+                  {tab.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-slate-400 hover:text-indigo-400 transition-colors text-sm flex items-center gap-2 group"
+                      >
+                        {link.icon && <link.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          {/* Company Links */}
-          <div>
-            <h3 className="font-semibold text-white mb-4">Company</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/about" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link href="/careers" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Mobile/Tablet View - Tabbed interface */}
+          <div className="lg:hidden md:col-span-1">
+            <div className="flex gap-2 mb-4 border-b border-slate-700 overflow-x-auto">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as "product" | "company" | "legal")}
+                  className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 ${
+                    activeTab === tab.id
+                      ? "border-indigo-500 text-indigo-400 bg-indigo-500/10"
+                      : "border-transparent text-slate-400 hover:text-slate-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-          {/* Legal Links */}
-          <div>
-            <h3 className="font-semibold text-white mb-4">Legal</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/privacy" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/cookies" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Cookie Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/accessibility" className="text-slate-400 hover:text-indigo-400 transition-colors text-sm">
-                  Accessibility
-                </Link>
-              </li>
-            </ul>
+            {/* Tab Content */}
+            <div className="space-y-3">
+              {tabs
+                .find((tab) => tab.id === activeTab)
+                ?.links.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-slate-400 hover:text-indigo-400 transition-colors text-sm flex items-center gap-2 group block"
+                  >
+                    {link.icon && <link.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+                    {link.label}
+                  </Link>
+                ))}
+            </div>
           </div>
 
           {/* Newsletter */}
@@ -179,12 +189,12 @@ export function Footer() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-indigo-500"
               />
               <Button
                 type="submit"
                 disabled={subscribing}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all"
               >
                 {subscribing ? "Subscribing..." : "Subscribe"}
               </Button>

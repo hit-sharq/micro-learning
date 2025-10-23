@@ -277,6 +277,72 @@ model ContentReport {
   @@map("content_reports")
 }
 
+model Blog {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String
+  content     String   // Rich text content
+  excerpt     String?  // Short preview text
+  
+  // Media
+  featuredImage String?
+  
+  // Metadata
+  tags        String[]
+  category    String?  // Blog category
+  
+  // Publishing
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  
+  // SEO
+  metaDescription String?
+  metaKeywords    String?
+  
+  // Admin tracking
+  createdBy   String   // Admin user ID
+  lastEditedBy String?  // Admin user ID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("blogs")
+}
+
+model Career {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String
+  content     String   // Full job description
+  
+  // Job details
+  department  String
+  location    String
+  jobType     JobType  @default(FULL_TIME)
+  experience  String   // e.g., "2-5 years"
+  salary      String?  // e.g., "$50k-$70k"
+  
+  // Requirements
+  requirements String[] // Array of requirements
+  benefits    String[]  // Array of benefits
+  
+  // Publishing
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  
+  // Admin tracking
+  createdBy   String   // Admin user ID
+  lastEditedBy String?  // Admin user ID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("careers")
+}
+
 // Enums
 enum Role {
   STUDENT
@@ -341,4 +407,12 @@ enum ReportStatus {
   UNDER_REVIEW
   RESOLVED
   DISMISSED
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
 }

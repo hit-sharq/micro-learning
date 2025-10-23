@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { Users, BookOpen, BarChart3, Megaphone, TrendingUp, Clock, Award, Activity } from "lucide-react"
+import { Users, BookOpen, BarChart3, Megaphone, TrendingUp, Clock, Award, Activity, Briefcase } from "lucide-react"
 
 async function getAdminStats() {
   try {
@@ -189,6 +189,28 @@ export default async function AdminPage() {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Announcements</h3>
             <p className="text-gray-600 text-sm">Create and manage platform announcements</p>
+          </Link>
+
+          <Link
+            href="/admin/blogs"
+            className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Blog Management</h3>
+            <p className="text-gray-600 text-sm">Create and manage blog posts</p>
+          </Link>
+
+          <Link
+            href="/admin/careers"
+            className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Briefcase className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Careers Management</h3>
+            <p className="text-gray-600 text-sm">Create and manage job postings</p>
           </Link>
         </div>
 
