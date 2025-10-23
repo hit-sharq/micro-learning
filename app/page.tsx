@@ -197,23 +197,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Microlearning Coach</span>
-            </div>
-            <p className="text-gray-400 mb-8">Empowering learners worldwide with personalized, bite-sized education.</p>
-            <div className="border-t border-gray-800 pt-8">
-              <p className="text-gray-500">© 2024 Microlearning Coach. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+
     </div>
   )
 }
