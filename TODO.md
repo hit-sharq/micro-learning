@@ -1,6 +1,6 @@
-# Footer Improvement Tasks
+# TODO: Add Loading Components to Project
 
-- [x] Enhance the gradient background with a more dynamic effect
-- [x] Add subtle hover animations to social icons and links
-- [x] Improve spacing and typography for better visual hierarchy
-- [x] Make the newsletter section more prominent with better styling
+- [x] Create reusable LoadingSpinner component in components/ui/loading-spinner.tsx
+- [x] Enhance app/lessons/loading.tsx to use the new component
+- [x] Enhance app/admin/analytics/loading.tsx to use the new component
+- [x] Test the loading components on the respective pages
