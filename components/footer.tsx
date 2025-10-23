@@ -174,7 +174,7 @@ export function Footer() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-slate-400 hover:text-indigo-400 transition-all duration-200 text-sm flex items-center gap-3 group block hover:translate-x-1"
+                    className="text-slate-400 hover:text-indigo-400 transition-all duration-200 text-sm flex items-center gap-3 group hover:translate-x-1"
                   >
                     {link.icon && <link.icon className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />}
                     {link.label}
