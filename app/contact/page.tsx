@@ -124,7 +124,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-purple-600 transition-colors">Phone Support</h3>
-                      <p className="text-slate-600 mb-1">+1 (555) 123-4567</p>
+                      <p className="text-slate-600 mb-1">+254-794-773-452</p>
                       <p className="text-sm text-slate-500">Mon-Fri, 9AM-6PM EST</p>
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-pink-600 transition-colors">Office Address</h3>
                       <p className="text-slate-600 mb-1">123 Learning Street<br />Education City, EC 12345</p>
-                      <p className="text-sm text-slate-500">United States</p>
+                      <p className="text-sm text-slate-500">Nairobi,Kenya</p>
                     </div>
                   </div>
                 </div>

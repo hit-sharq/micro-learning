@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, Users, Target, Zap } from "lucide-react"
+import Image from "next/image"
 import "./about.css"
 
 export default function AboutPage() {
@@ -41,6 +42,34 @@ export default function AboutPage() {
               We believe in accessibility, innovation, and community. Every learner deserves personalized support and
               recognition.
             </p>
+          </div>
+        </div>
+
+        <div className="about-creator-section">
+          <div className="about-creator-content">
+            <div className="about-creator-image-wrapper">
+              <Image
+                src="/images/IMG-20240623-WA0447.jpg"
+                alt="Creator of Microlearning Coach"
+                width={300}
+                height={400}
+                className="about-creator-image"
+                priority
+              />
+            </div>
+            <div className="about-creator-text">
+              <h2 className="about-creator-title">Meet the Creator</h2>
+              <p className="about-creator-description">
+                Microlearning Coach was built with passion by a dedicated developer who believes that education should
+                be accessible, personalized, and engaging for everyone. With a background in technology and a passion
+                for learning, the creator designed this platform to help thousands of learners achieve their educational
+                goals.
+              </p>
+              <p className="about-creator-description">
+                Every feature, every lesson, and every interaction has been carefully crafted to provide the best
+                learning experience possible.
+              </p>
+            </div>
           </div>
         </div>
 

@@ -150,7 +150,7 @@ export default function EditBlogPage() {
               onChange={handleInputChange}
               placeholder="Enter blog title"
               required
-              className="w-full"
+              className="w-full text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -164,7 +164,7 @@ export default function EditBlogPage() {
               onChange={handleInputChange}
               placeholder="blog-slug"
               required
-              className="w-full"
+              className="w-full text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -178,7 +178,7 @@ export default function EditBlogPage() {
               placeholder="Brief description of the blog post"
               required
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -192,7 +192,7 @@ export default function EditBlogPage() {
               placeholder="Full blog content (supports markdown)"
               required
               rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -205,7 +205,7 @@ export default function EditBlogPage() {
               value={formData.excerpt || ""}
               onChange={handleInputChange}
               placeholder="Short preview text"
-              className="w-full"
+              className="w-full text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -218,7 +218,7 @@ export default function EditBlogPage() {
               value={formData.category || ""}
               onChange={handleInputChange}
               placeholder="e.g., Learning Tips, Technology"
-              className="w-full"
+              className="w-full text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -231,7 +231,7 @@ export default function EditBlogPage() {
               value={formData.featuredImage || ""}
               onChange={handleInputChange}
               placeholder="https://example.com/image.jpg"
-              className="w-full"
+              className="w-full text-gray-900 placeholder:text-gray-400"
             />
           </div>
 
@@ -245,7 +245,7 @@ export default function EditBlogPage() {
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
                 placeholder="Add a tag and press Enter"
-                className="flex-1"
+                className="flex-1 text-gray-900 placeholder:text-gray-400"
               />
               <Button type="button" onClick={addTag} variant="outline">
                 <Plus className="w-4 h-4" />
@@ -275,7 +275,7 @@ export default function EditBlogPage() {
                   onChange={handleInputChange}
                   placeholder="SEO meta description"
                   rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
               <div>
@@ -286,7 +286,7 @@ export default function EditBlogPage() {
                   value={formData.metaKeywords || ""}
                   onChange={handleInputChange}
                   placeholder="keyword1, keyword2, keyword3"
-                  className="w-full"
+                  className="w-full text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
