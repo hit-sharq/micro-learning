@@ -1,6 +1,9 @@
-# TODO: Add Loading Components to Project
+# Lessons Redesign with Plain CSS
 
-- [x] Create reusable LoadingSpinner component in components/ui/loading-spinner.tsx
-- [x] Enhance app/lessons/loading.tsx to use the new component
-- [x] Enhance app/admin/analytics/loading.tsx to use the new component
-- [x] Test the loading components on the respective pages
+## Tasks
+- [x] Delete existing lessons-client.tsx and lessons-client-old.tsx files
+- [x] Update app/lessons/page.tsx to remove Tailwind classes and use plain CSS classes
+- [x] Expand app/lessons/lesson.css with comprehensive styles for the entire lessons page
+- [x] Create new app/lessons/lessons-client.tsx from scratch with plain CSS classes
+- [x] Test the page functionality and verify slide-in card works properly
+- [x] Fix CSS compatibility issues (line-clamp property)

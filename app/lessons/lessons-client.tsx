@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Link from "next/link"
 import { Search, Filter, Clock, BookOpen, Play, HelpCircle, X } from "lucide-react"
 import { BookmarkButton } from "@/components/bookmark-button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Lesson {
   id: number
@@ -29,6 +27,9 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all")
   const [selectedType, setSelectedType] = useState("all")
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
+  const [lessonContent, setLessonContent] = useState<any>(null)
+  const [loadingContent, setLoadingContent] = useState(false)
 
   const categories = useMemo(() => {
     const cats = [...new Set(lessons.map((l) => l.category))]
@@ -67,13 +68,13 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "beginner":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200"
+        return "lesson-difficulty-beginner"
       case "intermediate":
-        return "bg-amber-100 text-amber-700 border-amber-200"
+        return "lesson-difficulty-intermediate"
       case "advanced":
-        return "bg-rose-100 text-rose-700 border-rose-200"
+        return "lesson-difficulty-advanced"
       default:
-        return "bg-slate-100 text-slate-700 border-slate-200"
+        return "lesson-difficulty-default"
     }
   }
 
@@ -87,25 +88,48 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
     setSelectedType("all")
   }
 
+  const handleReadMore = async (lessonId: number) => {
+    setSelectedLessonId(lessonId)
+    setLoadingContent(true)
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setLessonContent(data.lesson)
+      }
+    } catch (error) {
+      console.error("Failed to fetch lesson content:", error)
+    } finally {
+      setLoadingContent(false)
+    }
+  }
+
+  const closePanel = () => {
+    setSelectedLessonId(null)
+    setLessonContent(null)
+  }
+
+  const selectedLesson = selectedLessonId ? lessons.find((l) => l.id === selectedLessonId) : null
+
   return (
-    <div className="space-y-8">
+    <div className="lessons-content">
       {/* Search and Filters Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div className="lessons-search-section">
         {/* Search Bar */}
-        <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+        <div className="lessons-search-container">
+          <div className="lessons-search-input-container">
+            <Search className="lessons-search-icon" />
             <input
               type="text"
               placeholder="Search lessons, topics, or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50 hover:bg-white"
+              className="lessons-search-input"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center justify-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+            className="lessons-filters-toggle"
           >
             <Filter className="w-5 h-5" />
             <span>Filters</span>
@@ -114,15 +138,15 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="pt-6 border-t border-slate-200 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="lessons-filters-panel">
+            <div className="lessons-filters-grid">
               {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Category</label>
+              <div className="lessons-filter-group">
+                <label className="lessons-filter-label">Category</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 hover:bg-white transition-all font-medium"
+                  className="lessons-filter-select"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -133,12 +157,12 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
               </div>
 
               {/* Difficulty Filter */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Difficulty</label>
+              <div className="lessons-filter-group">
+                <label className="lessons-filter-label">Difficulty</label>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 hover:bg-white transition-all font-medium"
+                  className="lessons-filter-select"
                 >
                   <option value="all">All Levels</option>
                   <option value="beginner">Beginner</option>
@@ -148,12 +172,12 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
               </div>
 
               {/* Type Filter */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Type</label>
+              <div className="lessons-filter-group">
+                <label className="lessons-filter-label">Type</label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-slate-50 hover:bg-white transition-all font-medium"
+                  className="lessons-filter-select"
                 >
                   <option value="all">All Types</option>
                   <option value="text">Text</option>
@@ -165,12 +189,12 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
 
             {/* Clear Filters Button */}
             {hasActiveFilters && (
-              <div className="flex justify-end pt-2">
+              <div className="lessons-clear-filters">
                 <button
                   onClick={resetFilters}
-                  className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+                  className="lessons-clear-filters-button"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="lessons-clear-icon" />
                   Clear all filters
                 </button>
               </div>
@@ -180,110 +204,243 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
       </div>
 
       {/* Results Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-slate-600 font-medium">
-          Showing <span className="text-indigo-600 font-semibold">{filteredLessons.length}</span> of{" "}
-          <span className="text-indigo-600 font-semibold">{lessons.length}</span> lessons
+      <div className="lessons-results-header">
+        <p className="lessons-results-count">
+          Showing <span className="lessons-results-highlight">{filteredLessons.length}</span> of{" "}
+          <span className="lessons-results-highlight">{lessons.length}</span> lessons
         </p>
       </div>
 
-      {/* Lessons Grid */}
-      {filteredLessons.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLessons.map((lesson) => (
-            <Card key={lesson.id} className="hover:shadow-lg transition-shadow group relative">
-              {/* Bookmark Button */}
-              <BookmarkButton lessonId={lesson.id} className="absolute top-4 right-4 z-10" />
+      {/* Main Content */}
+      <div className="lessons-main-content">
+        {/* Lessons Grid */}
+        <div>
+          {filteredLessons.length > 0 ? (
+            <div className="lessons-grid">
+              {filteredLessons.map((lesson) => (
+                <div
+                  key={lesson.id}
+                  className="lesson-card"
+                >
+                  {/* Bookmark Button */}
+                  <div className="lesson-bookmark">
+                    <BookmarkButton lessonId={lesson.id} />
+                  </div>
 
-              {/* Completed Badge */}
-              {lesson.completed && (
-                <div className="absolute top-4 left-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                  ✓ Completed
-                </div>
-              )}
-
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
-                      style={{ backgroundColor: lesson.categoryColor }}
-                    >
-                      {getTypeIcon(lesson.type)}
+                  {/* Completed Badge */}
+                  {lesson.completed && (
+                    <div className="lesson-completed-badge">
+                      ✓ Completed
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg group-hover:text-indigo-600 transition-colors line-clamp-2">
-                        {lesson.title}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">{lesson.category}</p>
+                  )}
+
+                  <div className="lesson-card-header">
+                    <div className="lesson-card-header-content">
+                      <div className="lesson-type-icon-container">
+                        <div
+                          className="lesson-type-icon"
+                          style={{ backgroundColor: lesson.categoryColor }}
+                        >
+                          {getTypeIcon(lesson.type)}
+                        </div>
+                        <div className="lesson-card-title-container">
+                          <h3 className="lesson-card-title">
+                            {lesson.title}
+                          </h3>
+                          <p className="lesson-card-category">{lesson.category}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardHeader>
 
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">{lesson.description}</p>
+                  <div className="lesson-card-content">
+                    <p className="lesson-card-description">{lesson.description}</p>
 
-                {/* Tags */}
-                {lesson.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {lesson.tags.slice(0, 2).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {lesson.tags.length > 2 && (
-                      <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">
-                        +{lesson.tags.length - 2}
-                      </span>
+                    {/* Tags */}
+                    {lesson.tags.length > 0 && (
+                      <div className="lesson-tags">
+                        {lesson.tags.slice(0, 2).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="lesson-tag"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {lesson.tags.length > 2 && (
+                          <span className="lesson-tag-extra">
+                            +{lesson.tags.length - 2}
+                          </span>
+                        )}
+                      </div>
                     )}
+
+                    {/* Meta Info */}
+                    <div className="lesson-meta">
+                      <div className="lesson-meta-left">
+                        <div className="lesson-duration">
+                          <Clock className="lesson-clock-icon" />
+                          <span>{lesson.duration} min</span>
+                        </div>
+                        <span
+                          className={`lesson-difficulty ${getDifficultyColor(lesson.difficulty)}`}
+                        >
+                          {lesson.difficulty}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleReadMore(lesson.id)}
+                      className="lesson-action-button"
+                    >
+                      Read More
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="lessons-no-results">
+              <div className="lessons-no-results-icon">
+                <Search className="lessons-no-results-search-icon" />
+              </div>
+              <h3 className="lessons-no-results-title">No lessons found</h3>
+              <p className="lessons-no-results-text">Try adjusting your search or filter criteria</p>
+              <button
+                onClick={resetFilters}
+                className="lessons-no-results-button"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
+        </div>
+
+        {selectedLesson && (
+          <>
+            {/* Overlay */}
+            <div className="lesson-overlay" onClick={closePanel} />
+
+            {/* Slide-in Card */}
+            <div className={`lesson-slide-card ${selectedLessonId ? "open" : ""}`}>
+              {/* Header */}
+              <div className="lesson-card-header">
+                <h2 className="lesson-card-title">Reading</h2>
+                <button onClick={closePanel} className="lesson-close-btn">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="lesson-card-content">
+                {loadingContent ? (
+                  <div className="lesson-loading">
+                    <div className="lesson-loading-item"></div>
+                    <div className="lesson-loading-item"></div>
+                    <div className="lesson-loading-item"></div>
+                  </div>
+                ) : lessonContent ? (
+                  <>
+                    {/* Icon and Title */}
+                    <div className="lesson-detail-header">
+                      <div
+                        className="lesson-detail-icon"
+                        style={{ backgroundColor: selectedLesson.categoryColor }}
+                      >
+                        {getTypeIcon(selectedLesson.type)}
+                      </div>
+                      <div>
+                        <h3 className="lesson-detail-title">{selectedLesson.title}</h3>
+                        <p className="lesson-detail-category">{selectedLesson.category}</p>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="lesson-detail-description">
+                      <p>{selectedLesson.description}</p>
+                    </div>
+
+                    {/* Meta Information */}
+                    <div className="lesson-detail-meta">
+                      <div className="lesson-meta-item">
+                        <span className="lesson-meta-label">Duration</span>
+                        <span className="lesson-meta-value">
+                          <Clock className="w-4 h-4" />
+                          {selectedLesson.duration} min
+                        </span>
+                      </div>
+                      <div className="lesson-meta-item">
+                        <span className="lesson-meta-label">Difficulty</span>
+                        <span
+                          className={`lesson-difficulty ${getDifficultyColor(selectedLesson.difficulty)}`}
+                        >
+                          {selectedLesson.difficulty}
+                        </span>
+                      </div>
+                      <div className="lesson-meta-item">
+                        <span className="lesson-meta-label">Type</span>
+                        <span className="lesson-meta-value capitalize">{selectedLesson.type}</span>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    {selectedLesson.tags.length > 0 && (
+                      <div className="lesson-detail-tags">
+                        <p className="lesson-detail-tags-label">Tags</p>
+                        <div className="lesson-detail-tags-list">
+                          {selectedLesson.tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="lesson-detail-tag"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lesson Content */}
+                    {lessonContent.type === "TEXT" && (
+                      <div className="lesson-content-section">
+                        <div
+                          className="lesson-content-text"
+                          dangerouslySetInnerHTML={{
+                            __html: lessonContent.content
+                              .replace(/\n/g, "<br>")
+                              .replace(
+                                /`([^`]+)`/g,
+                                "<code class='lesson-content-code'>$1</code>",
+                              )
+                              .replace(/\*\*([^*]+)\*\*/g, "<strong class='lesson-content-strong'>$1</strong>")
+                              .replace(/\*([^*]+)\*/g, "<em class='lesson-content-em'>$1</em>"),
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Completed Badge */}
+                    {selectedLesson.completed && (
+                      <div className="lesson-completed-section">
+                        <span className="lesson-completed-check">✓</span>
+                        <div className="lesson-completed-content">
+                          <h3>Completed</h3>
+                          <p>You've finished this lesson</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="lesson-error">
+                    <p>Unable to load lesson content</p>
                   </div>
                 )}
-
-                {/* Meta Info */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{lesson.duration} min</span>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(lesson.difficulty)}`}
-                    >
-                      {lesson.difficulty}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <Link
-                  href={`/lessons/${lesson.id}`}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:shadow-md transition-all duration-200 group-hover:scale-105 inline-block"
-                >
-                  {lesson.completed ? "Review" : "Start Learning"}
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Search className="w-10 h-10 text-slate-400" />
-          </div>
-          <h3 className="text-2xl font-bold text-slate-900 mb-2">No lessons found</h3>
-          <p className="text-slate-600 mb-6">Try adjusting your search or filter criteria</p>
-          <button
-            onClick={resetFilters}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all font-medium"
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
