@@ -1,15 +1,24 @@
 import { prisma } from "@/lib/prisma"
+import { Career } from "@prisma/client"
 import Link from "next/link"
 import { ArrowRight, MapPin, Briefcase, DollarSign } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function CareersPage() {
-  const careers = await prisma.career.findMany({
-    where: {
-      isPublished: true,
-      expiresAt: { gte: new Date() },
-    },
-    orderBy: { publishedAt: "desc" },
-  })
+  let careers: Career[] = []
+  try {
+    careers = await prisma.career.findMany({
+      where: {
+        isPublished: true,
+        expiresAt: { gte: new Date() },
+      },
+      orderBy: { publishedAt: "desc" },
+    })
+  } catch (error) {
+    console.error("Failed to fetch careers:", error)
+    // Handle error gracefully, e.g., show empty state
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
