@@ -144,31 +144,38 @@ async function main() {
   const categories = [
     {
       name: 'Programming',
-      description: 'Lessons related to programming languages and software development',
+      description: 'Learn coding fundamentals and advanced concepts',
       slug: 'programming',
       isActive: true,
       sortOrder: 1,
     },
     {
       name: 'Data Science',
-      description: 'Lessons on data analysis, machine learning, and statistics',
+      description: 'Master data analysis and machine learning',
       slug: 'data-science',
       isActive: true,
       sortOrder: 2,
     },
     {
       name: 'Design',
-      description: 'Lessons on graphic design, UI/UX, and visual arts',
+      description: 'UI/UX design principles and tools',
       slug: 'design',
       isActive: true,
       sortOrder: 3,
     },
     {
       name: 'Business',
-      description: 'Lessons on business strategy, marketing, and management',
+      description: 'Leadership, strategy, and entrepreneurship',
       slug: 'business',
       isActive: true,
       sortOrder: 4,
+    },
+    {
+      name: 'Marketing',
+      description: 'Digital marketing and growth strategies',
+      slug: 'marketing',
+      isActive: true,
+      sortOrder: 5,
     },
   ]
 

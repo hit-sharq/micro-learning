@@ -48,6 +48,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No categories found. Please create a category first." }, { status: 400 })
     }
 
+    // Check if categoryId is provided in formData
+    const categoryIdFromForm = formData.get("categoryId") as string
+    const selectedCategoryId = categoryIdFromForm ? parseInt(categoryIdFromForm) : defaultCategory.id
+
     for (const file of files) {
       try {
         const content = await file.text()
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
                 description: `Lesson created from ${fileName}`,
                 content: content,
                 type: "TEXT",
-                categoryId: defaultCategory.id,
+                categoryId: selectedCategoryId,
                 difficulty: "BEGINNER",
                 estimatedDuration: Math.max(5, Math.ceil(content.length / 200)), // Rough reading time
                 tags: ["bulk-upload"],
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
                   description: lesson.description || "No description provided",
                   content: lesson.content || "",
                   type: lesson.type?.toUpperCase() || "TEXT",
-                  categoryId: lesson.categoryId || defaultCategory.id,
+                  categoryId: lesson.categoryId || selectedCategoryId,
                   difficulty: lesson.difficulty?.toUpperCase() || "BEGINNER",
                   estimatedDuration: lesson.estimatedDuration || 10,
                   tags: lesson.tags || ["bulk-upload"],
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
                     description: jsonData.description || "No description provided",
                     content: jsonData.content || "",
                     type: jsonData.type?.toUpperCase() || "TEXT",
-                    categoryId: jsonData.categoryId || defaultCategory.id,
+                  categoryId: jsonData.categoryId || selectedCategoryId,
                     difficulty: jsonData.difficulty?.toUpperCase() || "BEGINNER",
                     estimatedDuration: jsonData.estimatedDuration || 10,
                     tags: jsonData.tags || ["bulk-upload"],
@@ -147,7 +151,7 @@ export async function POST(request: NextRequest) {
                   description: lessonData.description || "No description provided",
                   content: lessonData.content || "",
                   type: lessonData.type?.toUpperCase() || "TEXT",
-                  categoryId: lessonData.categoryId ? Number.parseInt(lessonData.categoryId) : defaultCategory.id,
+                  categoryId: lessonData.categoryId ? Number.parseInt(lessonData.categoryId) : selectedCategoryId,
                   difficulty: lessonData.difficulty?.toUpperCase() || "BEGINNER",
                   estimatedDuration: lessonData.estimatedDuration ? Number.parseInt(lessonData.estimatedDuration) : 10,
                   tags: lessonData.tags ? lessonData.tags.split(";") : ["bulk-upload"],

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
@@ -37,6 +38,9 @@ export default function CreateLessonPage() {
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([])
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+  const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false)
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     title: "",
@@ -243,17 +247,47 @@ export default function CreateLessonPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="type">Lesson Type *</Label>
-                  <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lesson type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="READING">Reading</SelectItem>
-                      <SelectItem value="VIDEO">Video</SelectItem>
-                      <SelectItem value="INTERACTIVE">Interactive</SelectItem>
-                      <SelectItem value="QUIZ">Quiz</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        {formData.type || "Select lesson type"}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Select Lesson Type</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex gap-3 mt-4 overflow-x-auto pb-4">
+                        {[
+                          { value: "READING", label: "Reading", description: "Text-based content", icon: "📖" },
+                          { value: "VIDEO", label: "Video", description: "Video lessons", icon: "🎥" },
+                          { value: "INTERACTIVE", label: "Interactive", description: "Hands-on activities", icon: "🖱️" },
+                          { value: "QUIZ", label: "Quiz", description: "Assessment content", icon: "❓" },
+                        ].map((type) => (
+                          <Card
+                            key={type.value}
+                            className={`cursor-pointer transition-all hover:shadow-md flex-shrink-0 w-48 ${
+                              formData.type === type.value ? "ring-2 ring-primary" : ""
+                            }`}
+                            onClick={() => {
+                              handleInputChange("type", type.value)
+                              setTypeDialogOpen(false)
+                            }}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xl">{type.icon}</span>
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium text-sm">{type.label}</h3>
+                                  <p className="text-xs text-muted-foreground">{type.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 
@@ -270,18 +304,46 @@ export default function CreateLessonPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
-                <Select value={formData.categoryId} onValueChange={(value) => handleInputChange("categoryId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      {formData.categoryId
+                        ? categories.find((c) => c.id.toString() === formData.categoryId)?.name
+                        : "Select category"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Select Category</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex gap-3 mt-4 overflow-x-auto pb-4">
+                      {categories.map((category) => (
+                        <Card
+                          key={category.id}
+                          className={`cursor-pointer transition-all hover:shadow-md flex-shrink-0 w-48 ${
+                            formData.categoryId === category.id.toString() ? "ring-2 ring-primary" : ""
+                          }`}
+                          onClick={() => {
+                            handleInputChange("categoryId", category.id.toString())
+                            setCategoryDialogOpen(false)
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color || "#3B82F6" }} />
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-medium text-sm truncate">{category.name}</h3>
+                                {category.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{category.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           )}
@@ -296,16 +358,46 @@ export default function CreateLessonPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="difficulty">Difficulty Level *</Label>
-                  <Select value={formData.difficulty} onValueChange={(value) => handleInputChange("difficulty", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BEGINNER">Beginner</SelectItem>
-                      <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                      <SelectItem value="ADVANCED">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Dialog open={difficultyDialogOpen} onOpenChange={setDifficultyDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        {formData.difficulty || "Select difficulty"}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Select Difficulty Level</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex gap-3 mt-4 overflow-x-auto pb-4">
+                        {[
+                          { value: "BEGINNER", label: "Beginner", description: "Perfect for newcomers", color: "bg-green-500" },
+                          { value: "INTERMEDIATE", label: "Intermediate", description: "For those with some experience", color: "bg-yellow-500" },
+                          { value: "ADVANCED", label: "Advanced", description: "For experienced learners", color: "bg-red-500" },
+                        ].map((level) => (
+                          <Card
+                            key={level.value}
+                            className={`cursor-pointer transition-all hover:shadow-md flex-shrink-0 w-48 ${
+                              formData.difficulty === level.value ? "ring-2 ring-primary" : ""
+                            }`}
+                            onClick={() => {
+                              handleInputChange("difficulty", level.value)
+                              setDifficultyDialogOpen(false)
+                            }}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-center space-x-2">
+                                <div className={`w-3 h-3 rounded-full ${level.color}`} />
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium text-sm">{level.label}</h3>
+                                  <p className="text-xs text-muted-foreground">{level.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="space-y-2">

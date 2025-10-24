@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface UploadResult {
   successful: number
@@ -22,6 +23,8 @@ interface UploadResult {
 interface Category {
   id: number
   name: string
+  description?: string
+  color?: string
 }
 
 export default function BulkUploadPage() {
@@ -31,6 +34,7 @@ export default function BulkUploadPage() {
   const [results, setResults] = useState<UploadResult | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -247,18 +251,46 @@ Your lesson content goes here...`
                 <CardDescription>Choose a default category for uploaded lessons</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      {selectedCategoryId
+                        ? categories.find((c) => c.id.toString() === selectedCategoryId)?.name
+                        : "Select category"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Select Category</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex gap-3 mt-4 overflow-x-auto pb-4">
+                      {categories.map((category) => (
+                        <Card
+                          key={category.id}
+                          className={`cursor-pointer transition-all hover:shadow-md flex-shrink-0 w-48 ${
+                            selectedCategoryId === category.id.toString() ? "ring-2 ring-primary" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedCategoryId(category.id.toString())
+                            setCategoryDialogOpen(false)
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color || "#3B82F6" }} />
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-medium text-sm truncate">{category.name}</h3>
+                                {category.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{category.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           )}
