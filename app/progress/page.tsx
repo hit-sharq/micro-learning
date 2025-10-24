@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import BackButton from "@/app/lessons/BackButton"
+import "./progress.css"
 
 async function getProgressData(userId: string) {
   try {
@@ -196,130 +197,119 @@ export default async function ProgressPage() {
   const data = await getProgressData(userId)
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <BackButton />
-        <h1 className="text-4xl font-bold text-slate-900 mt-4 mb-2">Your Learning Progress</h1>
-        <p className="text-lg text-slate-600">Track your journey and celebrate your achievements</p>
-      </div>
+    <div className="progress-page">
+      <div className="progress-container">
+        {/* Header */}
+        <div className="progress-header">
+          <BackButton />
+          <h1 className="progress-title">Your Learning Progress</h1>
+          <p className="progress-subtitle">Track your journey and celebrate your achievements</p>
+        </div>
 
-      {/* Overall Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-indigo-600 mb-2">{data.overallStats.completedLessons}</div>
-          <div className="text-slate-600 font-medium">Lessons Completed</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-emerald-600 mb-2">{data.overallStats.averageScore}%</div>
-          <div className="text-slate-600 font-medium">Average Score</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-purple-600 mb-2">
-            {Math.floor(data.overallStats.timeSpent / 60)}h {data.overallStats.timeSpent % 60}m
+        {/* Overall Stats */}
+        <div className="progress-stats-grid">
+          <div className="progress-stat-card">
+            <div className="progress-stat-value">{data.overallStats.completedLessons}</div>
+            <div className="progress-stat-label">Lessons Completed</div>
           </div>
-          <div className="text-slate-600 font-medium">Time Spent Learning</div>
+          <div className="progress-stat-card">
+            <div className="progress-stat-value">{data.overallStats.averageScore}%</div>
+            <div className="progress-stat-label">Average Score</div>
+          </div>
+          <div className="progress-stat-card">
+            <div className="progress-stat-value">
+              {Math.floor(data.overallStats.timeSpent / 60)}h {data.overallStats.timeSpent % 60}m
+            </div>
+            <div className="progress-stat-label">Time Spent Learning</div>
+          </div>
+          <div className="progress-stat-card">
+            <div className="progress-stat-value">{data.overallStats.currentStreak} 🔥</div>
+            <div className="progress-stat-label">Current Streak</div>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-orange-600 mb-2">{data.overallStats.currentStreak} 🔥</div>
-          <div className="text-slate-600 font-medium">Current Streak</div>
-        </div>
-      </div>
 
-      {/* Category Progress */}
-      {data.categoryProgress.length > 0 && (
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-          <h3 className="text-2xl font-bold text-slate-900 mb-6">Progress by Category</h3>
-          <div className="space-y-6">
-            {data.categoryProgress.map((category) => (
-              <div key={category.name}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-slate-900">{category.name}</span>
-                  <span className="text-sm text-slate-600">
-                    {category.completed}/{category.total} • {category.avgScore}% avg
-                  </span>
+        {/* Category Progress */}
+        {data.categoryProgress.length > 0 && (
+          <div className="progress-section-card">
+            <h3 className="progress-section-title">Progress by Category</h3>
+            <div className="progress-category-list">
+              {data.categoryProgress.map((category) => (
+                <div key={category.name} className="progress-category-item">
+                  <div className="progress-category-header">
+                    <span className="progress-category-name">{category.name}</span>
+                    <span className="progress-category-stats">
+                      {category.completed}/{category.total} • {category.avgScore}% avg
+                    </span>
+                  </div>
+                  <div className="progress-category-bar">
+                    <div
+                      className="progress-category-fill"
+                      style={{ width: `${(category.completed / category.total) * 100}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${(category.completed / category.total) * 100}%` }}
-                  ></div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Activity */}
+        <div className="progress-section-card">
+          <h3 className="progress-section-title">Recent Activity (Last 7 Days)</h3>
+          <div className="progress-activity-list">
+            {data.recentActivity.map((day) => (
+              <div key={day.date} className="progress-activity-item">
+                <div className="progress-activity-info">
+                  <div className="progress-activity-date">
+                    {new Date(day.date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                  <div className="progress-activity-details">
+                    {day.lessonsCompleted} lessons • {day.timeSpent} min
+                  </div>
+                </div>
+                <div className="progress-activity-dots">
+                  {Array.from({ length: Math.min(day.lessonsCompleted, 5) }).map((_, i) => (
+                    <div key={i} className="progress-activity-dot"></div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-        <h3 className="text-2xl font-bold text-slate-900 mb-6">Recent Activity (Last 7 Days)</h3>
-        <div className="space-y-3">
-          {data.recentActivity.map((day) => (
-            <div
-              key={day.date}
-              className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100"
-            >
-              <div>
-                <div className="font-semibold text-slate-900">
-                  {new Date(day.date).toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-                <div className="text-sm text-slate-600">
-                  {day.lessonsCompleted} lessons • {day.timeSpent} min
-                </div>
+        {/* Achievements */}
+        <div className="progress-section-card">
+          <h3 className="progress-section-title">Achievements</h3>
+          <div className="progress-achievements-grid">
+            {data.achievements.map((achievement) => (
+              <div
+                key={achievement.id}
+                className={`progress-achievement-card ${achievement.earned ? 'earned' : 'locked'}`}
+              >
+                <span className="progress-achievement-icon">{achievement.earned ? "🏆" : "🔒"}</span>
+                <h4 className="progress-achievement-title">{achievement.title}</h4>
+                <p className="progress-achievement-description">{achievement.description}</p>
+                {achievement.earned && achievement.date && (
+                  <p className="progress-achievement-date">Earned {new Date(achievement.date).toLocaleDateString()}</p>
+                )}
               </div>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(day.lessonsCompleted, 5) }).map((_, i) => (
-                  <div key={i} className="w-2 h-2 bg-indigo-600 rounded-full"></div>
-                ))}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Achievements */}
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-        <h3 className="text-2xl font-bold text-slate-900 mb-6">Achievements</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.achievements.map((achievement) => (
-            <div
-              key={achievement.id}
-              className={`p-6 rounded-2xl text-center border-2 transition-all ${
-                achievement.earned
-                  ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300"
-                  : "bg-slate-50 border-slate-200 opacity-60"
-              }`}
-            >
-              <div className="text-5xl mb-4">{achievement.earned ? "🏆" : "🔒"}</div>
-              <h4 className="text-lg font-bold text-slate-900 mb-2">{achievement.title}</h4>
-              <p className="text-sm text-slate-600 mb-4">{achievement.description}</p>
-              {achievement.earned && achievement.date && (
-                <p className="text-xs text-slate-500">Earned {new Date(achievement.date).toLocaleDateString()}</p>
-              )}
-            </div>
-          ))}
+        {/* Action Buttons */}
+        <div className="progress-actions">
+          <Link href="/lessons" className="progress-action-button primary">
+            Continue Learning
+          </Link>
+          <Link href="/dashboard" className="progress-action-button secondary">
+            Back to Dashboard
+          </Link>
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <Link
-          href="/lessons"
-          className="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all font-semibold text-center"
-        >
-          Continue Learning
-        </Link>
-        <Link
-          href="/dashboard"
-          className="flex-1 bg-slate-200 text-slate-900 px-6 py-3 rounded-xl hover:bg-slate-300 transition-all font-semibold text-center"
-        >
-          Back to Dashboard
-        </Link>
       </div>
     </div>
   )
