@@ -1,12 +1,21 @@
 import { prisma } from "@/lib/prisma"
+import { Blog } from "@prisma/client"
 import Link from "next/link"
 import { ArrowRight, Calendar, Tag } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function BlogPage() {
-  const blogs = await prisma.blog.findMany({
-    where: { isPublished: true },
-    orderBy: { publishedAt: "desc" },
-  })
+  let blogs: Blog[] = []
+  try {
+    blogs = await prisma.blog.findMany({
+      where: { isPublished: true },
+      orderBy: { publishedAt: "desc" },
+    })
+  } catch (error) {
+    console.error("Failed to fetch blogs:", error)
+    // Handle error gracefully, e.g., show empty state
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
