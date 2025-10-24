@@ -11,6 +11,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
     }
 
+    const { userId } = await auth()
+
     // Get lesson by ID if published
     const lesson = await prisma.lesson.findUnique({
       where: {
@@ -26,7 +28,20 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ lesson })
+    // Get user progress if user is authenticated
+    let userProgress = null
+    if (userId) {
+      userProgress = await prisma.userProgress.findUnique({
+        where: {
+          userId_lessonId: {
+            userId,
+            lessonId,
+          },
+        },
+      })
+    }
+
+    return NextResponse.json({ lesson: { ...lesson, userProgress } })
   } catch (error) {
     console.error("Get lesson error:", error)
     return NextResponse.json({ error: "Failed to fetch lesson" }, { status: 500 })

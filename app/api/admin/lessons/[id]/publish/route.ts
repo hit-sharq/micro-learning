@@ -115,6 +115,56 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const adminUserIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+    if (!adminUserIds.includes(userId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const { id } = await params
+    const lessonId = Number.parseInt(id)
+
+    if (isNaN(lessonId)) {
+      return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const { isPublished } = body
+
+    if (typeof isPublished !== "boolean") {
+      return NextResponse.json({ error: "isPublished must be a boolean" }, { status: 400 })
+    }
+
+    const lesson = await prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        isPublished,
+        publishedAt: isPublished ? new Date() : null,
+        updatedAt: new Date(),
+      },
+      include: {
+        category: true,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      lesson,
+      message: `Lesson ${isPublished ? "published" : "unpublished"} successfully!`,
+    })
+  } catch (error) {
+    console.error("Error updating lesson publish status:", error)
+    return NextResponse.json({ error: "Failed to update lesson publish status" }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { userId } = await auth()
