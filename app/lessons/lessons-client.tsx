@@ -55,13 +55,13 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "text":
-        return <BookOpen className="w-5 h-5" />
+        return <BookOpen className="lesson-type-icon-svg" />
       case "video":
-        return <Play className="w-5 h-5" />
+        return <Play className="lesson-type-icon-svg" />
       case "quiz":
-        return <HelpCircle className="w-5 h-5" />
+        return <HelpCircle className="lesson-type-icon-svg" />
       default:
-        return <BookOpen className="w-5 h-5" />
+        return <BookOpen className="lesson-type-icon-svg" />
     }
   }
 
