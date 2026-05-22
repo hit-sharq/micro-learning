@@ -2,6 +2,7 @@
 // import all premium components from a single path:
 //   import { PremiumButton, PremiumCard, PremiumBadge } from "@/components/premium"
 export { PremiumButton } from "./Button"
+export { BackButton } from "./BackButton"
 export { PremiumCard, CardHeader, CardTitle, CardDescription, CardBody } from "./Card"
 export { PremiumBadge } from "./Badge"
 export { SpotlightCard } from "./SpotlightCard"

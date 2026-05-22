@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { LessonsClient } from "./lessons-client"
+import { BackButton } from "@/components/premium"
 
 async function getLessonsData(userId?: string) {
   try {
@@ -34,9 +35,13 @@ export default async function LessonsPage() {
   const lessons = await getLessonsData(userId || undefined)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+
+      {/* ── Back ─────────────────────────────────────────────── */}
+      <div className="absolute -top-2 left-0"><BackButton href="/dashboard" label="Dashboard" /></div>
+
       {/* Section header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 pt-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             Explore Lessons

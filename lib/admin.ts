@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server"
 
 export function isAdminUser(userId: string): boolean {
-  const adminIds = process.env.ADMIN_USER_IDS?.split(",").map((id) => id.trim()) || []
+  const raw = process.env.ADMIN_USER_IDS || ""
+  const adminIds = raw.split(",").map((id) => id.trim()).filter(Boolean)
   console.log("Admin IDs from env:", adminIds)
   console.log("Checking user ID:", userId)
   return adminIds.includes(userId)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Trophy, Award, Sparkles, Zap, Target, Star, Flame, BookOpen, Filter } from "lucide-react"
-import { PremiumBadge } from "@/components/premium"
+import { PremiumBadge, BackButton } from "@/components/premium"
 import { cn } from "@/lib/utils"
 
 interface Achievement {
@@ -63,6 +63,9 @@ export default function AchievementsPage() {
 
   return (
     <div className="space-y-10">
+
+      {/* ── Back ─────────────────────────────────────────────── */}
+      <div className="absolute top-4 left-4 z-40 pt-2"><BackButton href="/dashboard" label="Dashboard" /></div>
 
       {/* ── Page header ───────────────────────────────────────── */}
       <div className="flex flex-col gap-2">

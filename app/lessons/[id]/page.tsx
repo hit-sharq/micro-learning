@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { BackButton } from "@/components/back-button"
+import { BackButton } from "@/components/premium"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { VideoPlayer } from "@/components/video-player"
 import { AdvancedQuiz } from "@/components/advanced-quiz"
@@ -171,7 +171,9 @@ export default function LessonPage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <BackButton href="/lessons" />
+              <div className="relative">
+                <BackButton href="/lessons" placement="static" />
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
                 <div className="flex items-center gap-3 mt-1">

@@ -6,100 +6,111 @@ import {
   BookOpen, Target, Clock, Flame, TrendingUp, Trophy,
   ArrowRight, Zap, Calendar, Award, CheckCircle2, Star,
 } from "lucide-react"
-import { PremiumBadge } from "@/components/premium"
+import { PremiumBadge, BackButton } from "@/components/premium"
 import { cn } from "@/lib/utils"
+import { Progress } from "@/components/ui/progress"
 
-/* ═══════════════════════════ Data ═══════════════════════════ */
+/* ═══════════════════════════ Data Fetching ═══════════════════════════ */
 async function getProgressData(userId: string) {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      include: {
-        progress: {
-          include: { lesson: { include: { category: true } } },
-        },
-        streaks: true,
-        achievements: { include: { achievement: true } },
-      },
-    })
-    if (!user) return emptyProgress()
+  // Get user's progress records with lesson data
+  const userProgress = await prisma.userProgress.findMany({
+    where: { userId },
+    include: { lesson: { include: { category: true } } },
+  })
 
-    const completedProgress = user.progress.filter((p: any) => p.completed)
-    const totalLessons = await prisma.lesson.count({ where: { isPublished: true } })
-    const avgScore = completedProgress.length
-      ? Math.round(completedProgress.reduce((s: number, p: any) => s + (p.score || 0), 0) / completedProgress.length)
-      : 0
-    const timeSpentMins = Math.round(user.progress.reduce((s: number, p: any) => s + (p.timeSpent || 0), 0) / 60)
+  // Get total lessons count
+  const totalLessons = await prisma.lesson.count({
+    where: { isPublished: true },
+  })
 
-    const categories = await prisma.category.findMany({
-      include: {
-        lessons: {
-          where: { isPublished: true },
-          include: { progress: { where: { userId } } },
-        },
-      },
-    })
-    const categoryProgress = categories
-      .map((cat: any) => {
-        const total = cat.lessons.length
-        const completed = cat.lessons.filter((l: any) => l.progress.some((p: any) => p.completed)).length
-        const scores = cat.lessons.flatMap((l: any) => l.progress.filter((p: any) => p.completed && p.score).map((p: any) => p.score))
-        const avg = scores.length ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0
-        return { name: cat.name, color: cat.color, completed, total, avg }
-      })
-      .filter((c: any) => c.total > 0)
-
-    const recentActivity = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i))
-      const start = new Date(d.setHours(0, 0, 0, 0))
-      const end   = new Date(d.setHours(23, 59, 59, 999))
-      const dayProg = user.progress.filter((p: any) => p.completedAt && p.completedAt >= start && p.completedAt <= end && p.completed)
-      return {
-        date: start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-        lessons: dayProg.length,
-        mins: Math.round(dayProg.reduce((s: number, p: any) => s + (p.timeSpent || 0), 0) / 60),
-        max: Math.max(...Array.from({ length: 7 }, (_, j) => {
-          const dx = new Date(); dx.setDate(dx.getDate() - (6 - j))
-          const sx = new Date(dx.setHours(0,0,0,0)); const ex = new Date(dx.setHours(23,59,59,999))
-          return user.progress.filter((p: any) => p.completedAt && p.completedAt >= sx && p.completedAt <= ex && p.completed).length
-        }), 1),
-      }
-    })
-
-    const achievements = [
-      { id: 1, title: "First Steps", description: "Complete your first lesson", earned: completedProgress.length > 0, earnedDate: completedProgress[0]?.completedAt ? new Date(completedProgress[0].completedAt).toLocaleDateString() : null },
-      { id: 2, title: "Week Warrior", description: "Maintain a 7-day streak", earned: (user.streaks?.currentStreak || 0) >= 7, earnedDate: null },
-      { id: 3, title: "Quiz Master", description: "Score 90%+ on 5 quizzes", earned: completedProgress.filter((p: any) => (p.score || 0) >= 90).length >= 5, earnedDate: null },
-      { id: 4, title: "Perfect Score", description: "Get 100% on any quiz", earned: completedProgress.some((p: any) => p.score === 100), earnedDate: completedProgress.find((p: any) => p.score === 100)?.completedAt ? new Date(completedProgress.find((p: any) => p.score === 100)!.completedAt!).toLocaleDateString() : null },
-      { id: 5, title: "Speed Learner", description: "Complete 10 lessons in one day", earned: false, earnedDate: null },
-      { id: 6, title: "Dedicated", description: "Complete 50 lessons total", earned: completedProgress.length >= 50, earnedDate: null },
-    ]
-
-    return { overallStats: { totalLessons, completed: completedProgress.length, avgScore, timeMins: timeSpentMins, streak: user.streaks?.currentStreak || 0, longestStreak: user.streaks?.longestStreak || 0 }, categoryProgress, recentActivity, achievements }
-  } catch {
-    return emptyProgress()
-  }
-}
-
-function emptyProgress() {
-  return {
-    overallStats: { totalLessons: 0, completed: 0, avgScore: 0, timeMins: 0, streak: 0, longestStreak: 0 },
-    categoryProgress: [], recentActivity: [], achievements: [],
-  }
-}
-
-/* ═══════════════════════════ Helpers ═══════════════════════════ */
-function ProgressBar({ value, max, color = "indigo" }: { value: number; max: number; color?: string }) {
-  const pct = max > 0 ? (value / max) * 100 : 0
-  const colorMap: Record<string, string> = {
-    indigo: "bg-indigo-500", purple: "bg-purple-500", pink: "bg-pink-500",
-    emerald: "bg-emerald-500", amber: "bg-amber-400", blue: "bg-blue-500",
-  }
-  return (
-    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden w-full">
-      <div className={cn("h-full rounded-full transition-all duration-500", colorMap[color] || colorMap.indigo)} style={{ width: `${pct}%` }} />
-    </div>
+  // Calculate overall stats
+  const completed = userProgress.filter((p) => p.completed).length
+  const scores = userProgress.filter((p) => p.score !== null).map((p) => p.score!)
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
+  const timeMins = Math.round(
+    (userProgress.reduce((acc, p) => acc + (p.timeSpent || 0), 0) || 0) / 60
   )
+
+  // Get streak data
+  const streakData = await prisma.userStreak.findUnique({
+    where: { userId },
+  })
+  const streak = streakData?.currentStreak || 0
+  const longestStreak = streakData?.longestStreak || 0
+
+  // Category progress
+  const categoryMap = new Map<string, { name: string; color: string; completed: number; total: number; scores: number[] }>()
+  const lessons = await prisma.lesson.findMany({
+    where: { isPublished: true },
+    include: { category: true },
+  })
+
+  for (const lesson of lessons) {
+    const cat = lesson.category
+    if (!categoryMap.has(cat.name)) {
+      categoryMap.set(cat.name, { name: cat.name, color: cat.color, completed: 0, total: 0, scores: [] })
+    }
+    const entry = categoryMap.get(cat.name)!
+    entry.total++
+    const progress = userProgress.find((p) => p.lessonId === lesson.id)
+    if (progress?.completed) {
+      entry.completed++
+      if (progress.score !== null) entry.scores.push(progress.score)
+    }
+  }
+
+  const categoryProgress = Array.from(categoryMap.values()).map((cat) => ({
+    ...cat,
+    avg: cat.scores.length > 0 ? Math.round(cat.scores.reduce((a, b) => a + b, 0) / cat.scores.length) : 0,
+  }))
+
+  // Recent activity (last 7 days)
+  const today = new Date()
+  const recentActivity = []
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split("T")[0]
+    const dayStart = new Date(dateStr)
+    const dayEnd = new Date(new Date(dateStr).setDate(new Date(dateStr).getDate() + 1))
+
+    const dayProgress = await prisma.userProgress.count({
+      where: {
+        userId,
+        completedAt: { gte: dayStart, lt: dayEnd },
+      },
+    })
+    recentActivity.push({
+      date: date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+      lessons: dayProgress,
+      max: 5, // max expected per day
+    })
+  }
+
+  // Achievements
+  const allAchievements = await prisma.achievement.findMany({ where: { isActive: true } })
+  const userAchievements = await prisma.userAchievement.findMany({
+    where: { userId },
+  })
+  const earnedIds = new Set(userAchievements.map((ua) => ua.achievementId))
+
+  const achievements = allAchievements.map((a) => {
+    const ua = userAchievements.find((u) => u.achievementId === a.id)
+    return {
+      id: a.id,
+      title: a.name,
+      description: a.description,
+      earned: earnedIds.has(a.id),
+      earnedDate: ua?.unlockedAt?.toLocaleDateString(),
+    }
+  })
+
+  return {
+    overallStats: { completed, totalLessons, avgScore, timeMins, streak, longestStreak },
+    categoryProgress,
+    recentActivity,
+    achievements,
+  }
 }
 
 /* ═══════════════════════════ Page ═══════════════════════════ */
@@ -111,10 +122,11 @@ export default async function ProgressPage() {
   const { overallStats, categoryProgress, recentActivity, achievements } = data
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
 
       {/* ── Page header ───────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
+      <div className="absolute -top-2 left-0"><BackButton href="/dashboard" label="Dashboard" /></div>
+      <div className="pt-12 flex items-center gap-3">
         <TrendingUp className="w-7 h-7 text-indigo-500" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Your Progress</h1>
@@ -159,7 +171,7 @@ export default async function ProgressPage() {
                   </div>
                   <span className="text-xs font-semibold text-slate-500">{cat.completed}/{cat.total} • {cat.avg}% avg</span>
                 </div>
-                <ProgressBar value={cat.completed} max={cat.total || 1} color={cat.name === "React" ? "purple" : cat.name === "JavaScript" ? "amber" : "indigo"} />
+                <Progress value={(cat.completed / (cat.total || 1)) * 100} className="h-2" />
               </div>
             ))}
           </div>

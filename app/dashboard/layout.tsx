@@ -56,9 +56,9 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             ))}
           </nav>
 
-          {/* Admin link at bottom */}
-          {isAdmin && (
-            <div className="px-3 pb-4 border-t border-slate-200/60 dark:border-slate-800/60 pt-4">
+          {/* Admin link — always visible, disabled state if not admin */}
+          <div className="px-3 pb-4 border-t border-slate-200/60 dark:border-slate-800/60 pt-4">
+            {isAdmin ? (
               <Link
                 href="/admin"
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 transition-all"
@@ -66,8 +66,13 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
                 <Settings className="w-4 h-4" />
                 Admin Panel
               </Link>
-            </div>
-          )}
+            ) : (
+              <span className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 dark:text-slate-600 cursor-not-allowed" title="Admin access restricted">
+                <Settings className="w-4 h-4" />
+                Admin Panel
+              </span>
+            )}
+          </div>
         </aside>
 
         {/* ═══════ MAIN COLUMN ═══════ */}
