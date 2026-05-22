@@ -10,6 +10,7 @@ export default function SignUpPage() {
           <p>Start your personalized learning journey today</p>
         </div>
         <SignUp
+          redirectUrl="/dashboard"
           appearance={{
             elements: {
               formButtonPrimary: "btn btn-primary",

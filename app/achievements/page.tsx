@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import BackButton from "@/app/lessons/BackButton"
+import { Trophy, Award, Sparkles, Zap, Target, Star, Flame, BookOpen, Filter } from "lucide-react"
+import { PremiumBadge } from "@/components/premium"
+import { cn } from "@/lib/utils"
 
 interface Achievement {
   id: number
@@ -19,152 +21,148 @@ export default function AchievementsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
 
-  useEffect(() => {
-    fetchAchievements()
-  }, [])
+  useEffect(() => { fetchAchievements() }, [])
 
   const fetchAchievements = async () => {
     try {
-      const response = await fetch("/api/achievements")
-      const data = await response.json()
+      const res = await fetch("/api/achievements")
+      const data = await res.json()
       setAchievements(data.achievements || [])
-    } catch (error) {
-      console.error("Failed to fetch achievements:", error)
-    } finally {
-      setLoading(false)
-    }
+    } catch (e) { console.error("Failed to fetch achievements:", e) }
+    finally { setLoading(false) }
   }
 
-  const filteredAchievements = achievements.filter((achievement) => {
-    if (filter === "unlocked") return achievement.isUnlocked
-    if (filter === "locked") return !achievement.isUnlocked
+  const filtered = achievements.filter((a) => {
+    if (filter === "unlocked") return a.isUnlocked
+    if (filter === "locked") return !a.isUnlocked
     return true
   })
 
-  const totalPoints = achievements.filter((a) => a.isUnlocked).reduce((sum, a) => sum + a.points, 0)
+  const totalPoints = achievements.filter((a) => a.isUnlocked).reduce((s, a) => s + a.points, 0)
   const unlockedCount = achievements.filter((a) => a.isUnlocked).length
+  const streakCount = achievements.filter((a) => a.isUnlocked && a.type === "STREAK").length
+
+  const tabs = [
+    { key: "all", label: "All", count: achievements.length },
+    { key: "unlocked", label: "Unlocked", count: unlockedCount },
+    { key: "locked", label: "Locked", count: achievements.length - unlockedCount },
+  ] as const
 
   if (loading) {
     return (
       <div className="space-y-8">
-        <BackButton />
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-pulse text-slate-600 font-medium">Loading achievements...</div>
+        <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
+          ))}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <BackButton />
-        <h1 className="text-4xl font-bold text-slate-900 mt-4 mb-2">Achievements</h1>
-        <p className="text-lg text-slate-600">Track your learning milestones and unlock rewards</p>
+    <div className="space-y-10">
+
+      {/* ── Page header ───────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-8 h-8 text-amber-400" />
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Achievements
+          </h1>
+        </div>
+        <p className="text-slate-500 dark:text-slate-400 pl-10">
+          Track your learning milestones and unlock rewards
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-purple-600 mb-2">{unlockedCount}</div>
-          <div className="text-slate-600 font-medium">Achievements Unlocked</div>
-          <div className="text-xs text-slate-500 mt-1">{achievements.length - unlockedCount} remaining</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-amber-600 mb-2">{totalPoints}</div>
-          <div className="text-slate-600 font-medium">Total Points</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-indigo-600 mb-2">
-            {Math.round((unlockedCount / achievements.length) * 100)}%
+      {/* ── Stats strip ───────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Unlocked",    value: unlockedCount,   sub: `${achievements.length - unlockedCount} remaining`,     icon: Trophy,      accent: "purple" },
+          { label: "Total Points",value: totalPoints,     sub: "All time",                                           icon: Award,      accent: "amber" },
+          { label: "Completion", value: `${Math.round((unlockedCount / Math.max(achievements.length, 1)) * 100)}%`, sub: "of all achievements",  icon: Sparkles,   accent: "indigo" },
+          { label: "Streak Badges",value: streakCount,    sub: "Maintain daily practice",                           icon: Flame,      accent: "orange" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl p-5 bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/70 hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{s.label}</span>
+              <s.icon className={cn("w-4.5 h-4.5", accentIcon(s.accent))} />
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">{s.value}</div>
+            <div className="text-xs text-slate-400 mt-1">{s.sub}</div>
           </div>
-          <div className="text-slate-600 font-medium">Completion Rate</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg transition-all">
-          <div className="text-3xl font-bold text-orange-600 mb-2">
-            {achievements.filter((a) => a.isUnlocked && a.type === "STREAK").length}
-          </div>
-          <div className="text-slate-600 font-medium">Streak Achievements</div>
-        </div>
+        ))}
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap gap-3">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-            filter === "all" ? "bg-indigo-600 text-white shadow-md" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
-        >
-          All ({achievements.length})
-        </button>
-        <button
-          onClick={() => setFilter("unlocked")}
-          className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-            filter === "unlocked"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
-        >
-          Unlocked ({unlockedCount})
-        </button>
-        <button
-          onClick={() => setFilter("locked")}
-          className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-            filter === "locked"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
-        >
-          Locked ({achievements.length - unlockedCount})
-        </button>
+      {/* ── Filters ───────────────────────────────────────────── */}
+      <div className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={cn(
+              "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all",
+              filter === tab.key
+                ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
+            )}
+          >
+            {tab.label}
+            <span className="ml-1.5 text-xs font-bold opacity-60">({tab.count})</span>
+          </button>
+        ))}
       </div>
 
-      {/* Achievements Grid */}
-      {filteredAchievements.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAchievements.map((achievement) => (
+      {/* ── Grid ──────────────────────────────────────────────── */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filtered.map((a) => (
             <div
-              key={achievement.id}
-              className={`rounded-2xl p-6 text-center border-2 transition-all transform hover:-translate-y-1 ${
-                achievement.isUnlocked
-                  ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 hover:shadow-lg"
-                  : "bg-slate-50 border-slate-200 opacity-60"
-              }`}
+              key={a.id}
+              className={cn(
+                "group relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+                a.isUnlocked
+                  ? "bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-amber-50/50 dark:from-amber-500/10 dark:via-orange-500/8 dark:to-amber-500/10 border-amber-200/70 dark:border-amber-800/30"
+                  : "bg-slate-50 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-700/60 opacity-70 hover:opacity-100",
+              )}
             >
-              <div className="text-6xl mb-4">{achievement.isUnlocked ? achievement.icon : "🔒"}</div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{achievement.name}</h3>
-              <p className="text-sm text-slate-600 mb-4">{achievement.description}</p>
-
-              <div className="flex items-center justify-between">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    achievement.isUnlocked ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
-                  }`}
-                >
-                  {achievement.points} points
-                </span>
-                {achievement.isUnlocked && achievement.unlockedAt && (
-                  <span className="text-xs text-slate-500">
-                    {new Date(achievement.unlockedAt).toLocaleDateString()}
-                  </span>
+              {/* Icon */}
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-4xl leading-none">{a.isUnlocked ? a.icon : "🔒"}</span>
+                {a.isUnlocked && a.unlockedAt && (
+                  <PremiumBadge variant="success" size="sm">✓ Unlocked</PremiumBadge>
                 )}
               </div>
-
-              {achievement.isUnlocked && (
-                <div className="mt-3 text-emerald-600 font-semibold text-sm">✅ Unlocked!</div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{a.name}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">{a.description}</p>
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 dark:border-slate-700/50">
+                <PremiumBadge variant={a.isUnlocked ? "warning" : "muted"} size="sm">{a.points} pts</PremiumBadge>
+                <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">{a.type}</span>
+              </div>
+              {a.isUnlocked && a.unlockedAt && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-2">
+                  Earned {new Date(a.unlockedAt).toLocaleDateString()}
+                </p>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-          <div className="text-6xl mb-4">🏆</div>
-          <h3 className="text-2xl font-bold text-slate-900 mb-2">No achievements found</h3>
-          <p className="text-slate-600">Try adjusting your filter or start learning to unlock achievements!</p>
+        <div className="text-center py-20 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+          <span className="text-5xl block mb-4">🏆</span>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5">No achievements found</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Try adjusting your filter or start learning!</p>
         </div>
       )}
     </div>
   )
+}
+
+function accentIcon(accent: string) {
+  return {
+    indigo: "text-indigo-500", purple: "text-purple-500", amber: "text-amber-500",
+    orange: "text-orange-500", emerald: "text-emerald-500",
+  }[accent] || "text-slate-400"
 }

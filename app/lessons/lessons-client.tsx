@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, Filter, Clock, BookOpen, Play, HelpCircle, X } from "lucide-react"
-import { BookmarkButton } from "@/components/bookmark-button"
+import Link from "next/link"
+import { Search, Filter, Clock, BookOpen, Play, HelpCircle, X, ArrowLeft, CheckCircle2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { PremiumButton } from "@/components/premium"
+import { PremiumBadge } from "@/components/premium"
 
 interface Lesson {
   id: number
@@ -21,15 +24,24 @@ interface LessonsClientProps {
   lessons: Lesson[]
 }
 
+const typeIconMap: Record<string, React.ElementType> = {
+  text: BookOpen,
+  video: Play,
+  quiz: HelpCircle,
+}
+
+const difficultyBadge: Record<string, { variant: "primary" | "success" | "warning" | "danger"; label: string }> = {
+  beginner:    { variant: "success",    label: "Beginner" },
+  intermediate:{ variant: "warning",    label: "Intermediate" },
+  advanced:    { variant: "danger",     label: "Advanced" },
+}
+
 export function LessonsClient({ lessons }: LessonsClientProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedDifficulty, setSelectedDifficulty] = useState("all")
   const [selectedType, setSelectedType] = useState("all")
   const [showFilters, setShowFilters] = useState(false)
-  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null)
-  const [lessonContent, setLessonContent] = useState<any>(null)
-  const [loadingContent, setLoadingContent] = useState(false)
 
   const categories = useMemo(() => {
     const cats = [...new Set(lessons.map((l) => l.category))]
@@ -38,164 +50,84 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
 
   const filteredLessons = useMemo(() => {
     return lessons.filter((lesson) => {
-      const matchesSearch =
+      const mSearch =
         !searchQuery ||
         lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lesson.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lesson.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-
-      const matchesCategory = selectedCategory === "all" || lesson.category === selectedCategory
-      const matchesDifficulty = selectedDifficulty === "all" || lesson.difficulty === selectedDifficulty
-      const matchesType = selectedType === "all" || lesson.type === selectedType
-
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesType
+        lesson.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+      const mCat = selectedCategory === "all" || lesson.category === selectedCategory
+      const mDif = selectedDifficulty === "all" || lesson.difficulty === selectedDifficulty
+      const mType = selectedType === "all" || lesson.type === selectedType
+      return mSearch && mCat && mDif && mType
     })
   }, [lessons, searchQuery, selectedCategory, selectedDifficulty, selectedType])
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "text":
-        return <BookOpen className="lesson-type-icon-svg" />
-      case "video":
-        return <Play className="lesson-type-icon-svg" />
-      case "quiz":
-        return <HelpCircle className="lesson-type-icon-svg" />
-      default:
-        return <BookOpen className="lesson-type-icon-svg" />
-    }
-  }
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "beginner":
-        return "lesson-difficulty-beginner"
-      case "intermediate":
-        return "lesson-difficulty-intermediate"
-      case "advanced":
-        return "lesson-difficulty-advanced"
-      default:
-        return "lesson-difficulty-default"
-    }
-  }
-
-  const hasActiveFilters =
-    searchQuery || selectedCategory !== "all" || selectedDifficulty !== "all" || selectedType !== "all"
+  const hasFilters = searchQuery || selectedCategory !== "all" || selectedDifficulty !== "all" || selectedType !== "all"
 
   const resetFilters = () => {
-    setSearchQuery("")
-    setSelectedCategory("all")
-    setSelectedDifficulty("all")
-    setSelectedType("all")
+    setSearchQuery(""); setSelectedCategory("all"); setSelectedDifficulty("all"); setSelectedType("all")
   }
 
-  const handleReadMore = async (lessonId: number) => {
-    setSelectedLessonId(lessonId)
-    setLoadingContent(true)
-    try {
-      const response = await fetch(`/api/lessons/${lessonId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setLessonContent(data.lesson)
-      }
-    } catch (error) {
-      console.error("Failed to fetch lesson content:", error)
-    } finally {
-      setLoadingContent(false)
-    }
-  }
-
-  const closePanel = () => {
-    setSelectedLessonId(null)
-    setLessonContent(null)
-  }
-
-  const selectedLesson = selectedLessonId ? lessons.find((l) => l.id === selectedLessonId) : null
+  const TypeIcon = (type: string) => typeIconMap[type] || BookOpen
 
   return (
-    <div className="lessons-content">
-      {/* Search and Filters Section */}
-      <div className="lessons-search-section">
-        {/* Search Bar */}
-        <div className="lessons-search-container">
-          <div className="lessons-search-input-container">
-            <Search className="lessons-search-icon" />
+    <div className="space-y-6">
+
+      {/* ── Search + filters ─────────────────────────────────── */}
+      <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white dark:bg-slate-900 p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search lessons, topics, or tags..."
+              placeholder="Search lessons, topics, or tags…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="lessons-search-input"
+              className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200/70 dark:border-slate-700/70 bg-slate-50 dark:bg-slate-800/50 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="lessons-filters-toggle"
+            className={cn(
+              "inline-flex items-center gap-2 px-5 h-11 rounded-xl text-sm font-semibold transition-all",
+              showFilters
+                ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/30"
+                : "bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800",
+            )}
           >
-            <Filter className="w-5 h-5" />
-            <span>Filters</span>
+            <Filter className="w-4 h-4" />
+            Filters
+            {hasFilters && <span className="w-2 h-2 rounded-full bg-indigo-500" />}
           </button>
         </div>
 
-        {/* Filter Panel */}
+        {/* Filter panel */}
         {showFilters && (
-          <div className="lessons-filters-panel">
-            <div className="lessons-filters-grid">
-              {/* Category Filter */}
-              <div className="lessons-filter-group">
-                <label className="lessons-filter-label">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="lessons-filter-select"
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category === "all" ? "All Categories" : category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Difficulty Filter */}
-              <div className="lessons-filter-group">
-                <label className="lessons-filter-label">Difficulty</label>
-                <select
-                  value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="lessons-filter-select"
-                >
-                  <option value="all">All Levels</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-
-              {/* Type Filter */}
-              <div className="lessons-filter-group">
-                <label className="lessons-filter-label">Type</label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="lessons-filter-select"
-                >
-                  <option value="all">All Types</option>
-                  <option value="text">Text</option>
-                  <option value="video">Video</option>
-                  <option value="quiz">Quiz</option>
-                </select>
-              </div>
+          <div className="mt-5 pt-5 border-t border-slate-100 dark:border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: "Category",    value: selectedCategory,   onChange: setSelectedCategory,   options: categories.map(c => [c, c === "all" ? "All" : c]) },
+                { label: "Difficulty",  value: selectedDifficulty, onChange: setSelectedDifficulty, options: [["all","All Levels"],["beginner","Beginner"],["intermediate","Intermediate"],["advanced","Advanced"]] },
+                { label: "Type",        value: selectedType,       onChange: setSelectedType,       options: [["all","All Types"],["text","Text"],["video","Video"],["quiz","Quiz"]] },
+              ].map(({ label, value, onChange, options }) => (
+                <div key={label}>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
+                  <select
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200/70 dark:border-slate-700/70 bg-slate-50 dark:bg-slate-800/50 text-sm text-slate-900 dark:text-white focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  >
+                    {options.map(([v, l]) => (
+                      <option key={v} value={v}>{l as string}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
-
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <div className="lessons-clear-filters">
-                <button
-                  onClick={resetFilters}
-                  className="lessons-clear-filters-button"
-                >
-                  <X className="lessons-clear-icon" />
-                  Clear all filters
+            {hasFilters && (
+              <div className="mt-4 flex justify-end">
+                <button onClick={resetFilters} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-red-500 transition-colors">
+                  <X className="w-3.5 h-3.5" /> Clear all
                 </button>
               </div>
             )}
@@ -203,244 +135,155 @@ export function LessonsClient({ lessons }: LessonsClientProps) {
         )}
       </div>
 
-      {/* Results Header */}
-      <div className="lessons-results-header">
-        <p className="lessons-results-count">
-          Showing <span className="lessons-results-highlight">{filteredLessons.length}</span> of{" "}
-          <span className="lessons-results-highlight">{lessons.length}</span> lessons
+      {/* ── Results header ────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Showing{" "}
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400">{filteredLessons.length}</span>{" "}
+          of{" "}
+          <span className="font-semibold text-slate-700 dark:text-slate-300">{lessons.length}</span>{" "}
+          lessons
         </p>
+        {hasFilters && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">
+            <Filter className="w-3 h-3" /> Filters active
+          </span>
+        )}
       </div>
 
-      {/* Main Content */}
-      <div className="lessons-main-content">
-        {/* Lessons Grid */}
-        <div>
-          {filteredLessons.length > 0 ? (
-            <div className="lessons-grid">
-              {filteredLessons.map((lesson) => (
+      {/* ── Grid ──────────────────────────────────────────────── */}
+      {filteredLessons.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredLessons.map((lesson) => {
+            const ResolvedTypeIcon = TypeIcon(lesson.type)
+            const diffTok = difficultyBadge[lesson.difficulty] || { variant: "primary" as const, label: lesson.difficulty }
+            return (
+              <div
+                key={lesson.id}
+                className="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/70 hover:border-indigo-300/60 dark:hover:border-indigo-700/40 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/8 hover:-translate-y-1 overflow-hidden"
+              >
+                {/* top accent bar */}
                 <div
-                  key={lesson.id}
-                  className="lesson-card"
-                >
-                  {/* Bookmark Button */}
-                  <div className="lesson-bookmark">
-                    <BookmarkButton lessonId={lesson.id} />
+                  className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ background: lesson.categoryColor }}
+                />
+                {/* completed badge */}
+                {lesson.completed && (
+                  <div className="absolute top-3.5 left-3.5 z-10">
+                    <PremiumBadge variant="success" size="sm" dot>
+                      ✓ Completed
+                    </PremiumBadge>
+                  </div>
+                )}
+                {/* bookmark */}
+                <div className="absolute top-3.5 right-3.5 z-10">
+                  <BookmarkButton lessonId={lesson.id} />
+                </div>
+
+                {/* Card body */}
+                <div className="p-6 pt-14 sm:pt-6">
+                  {/* icon + title row */}
+                  <div className="flex items-start gap-3.5 mb-4">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
+                      style={{ backgroundColor: lesson.categoryColor }}
+                    >
+                      <ResolvedTypeIcon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug line-clamp-1">
+                        {lesson.title}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{lesson.category}</p>
+                    </div>
                   </div>
 
-                  {/* Completed Badge */}
-                  {lesson.completed && (
-                    <div className="lesson-completed-badge">
-                      ✓ Completed
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4 line-clamp-2">
+                    {lesson.description}
+                  </p>
+
+                  {/* Tags */}
+                  {lesson.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {lesson.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-slate-700/70"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   )}
 
-                  <div className="lesson-card-header">
-                    <div className="lesson-card-header-content">
-                      <div className="lesson-type-icon-container">
-                        <div
-                          className="lesson-type-icon"
-                          style={{ backgroundColor: lesson.categoryColor }}
-                        >
-                          {getTypeIcon(lesson.type)}
-                        </div>
-                        <div className="lesson-card-title-container">
-                          <h3 className="lesson-card-title">
-                            {lesson.title}
-                          </h3>
-                          <p className="lesson-card-category">{lesson.category}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lesson-card-content">
-                    <p className="lesson-card-description">{lesson.description}</p>
-
-                    {/* Tags */}
-                    {lesson.tags.length > 0 && (
-                      <div className="lesson-tags">
-                        {lesson.tags.slice(0, 2).map((tag, index) => (
-                          <span
-                            key={index}
-                            className="lesson-tag"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {lesson.tags.length > 2 && (
-                          <span className="lesson-tag-extra">
-                            +{lesson.tags.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Meta Info */}
-                    <div className="lesson-meta">
-                      <div className="lesson-meta-left">
-                        <div className="lesson-duration">
-                          <Clock className="lesson-clock-icon" />
-                          <span>{lesson.duration} min</span>
-                        </div>
-                        <span
-                          className={`lesson-difficulty ${getDifficultyColor(lesson.difficulty)}`}
-                        >
-                          {lesson.difficulty}
-                        </span>
-                      </div>
+                  {/* Meta row */}
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                        <Clock className="w-3 h-3" /> {lesson.duration}m
+                      </span>
+                      <PremiumBadge variant={diffTok.variant} size="sm">{diffTok.label}</PremiumBadge>
                     </div>
 
-                    <button
-                      onClick={() => handleReadMore(lesson.id)}
-                      className="lesson-action-button"
-                    >
-                      Read More
-                    </button>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+                      {lesson.type.toUpperCase()}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="lessons-no-results">
-              <div className="lessons-no-results-icon">
-                <Search className="lessons-no-results-search-icon" />
               </div>
-              <h3 className="lessons-no-results-title">No lessons found</h3>
-              <p className="lessons-no-results-text">Try adjusting your search or filter criteria</p>
-              <button
-                onClick={resetFilters}
-                className="lessons-no-results-button"
-              >
-                Clear Filters
-              </button>
-            </div>
-          )}
+            )
+          })}
         </div>
-
-        {selectedLesson && (
-          <>
-            {/* Overlay */}
-            <div className="lesson-overlay" onClick={closePanel} />
-
-            {/* Slide-in Card */}
-            <div className={`lesson-slide-card ${selectedLessonId ? "open" : ""}`}>
-              {/* Header */}
-              <div className="lesson-card-header">
-                <h2 className="lesson-card-title">Reading</h2>
-                <button onClick={closePanel} className="lesson-close-btn">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="lesson-card-content">
-                {loadingContent ? (
-                  <div className="lesson-loading">
-                    <div className="lesson-loading-item"></div>
-                    <div className="lesson-loading-item"></div>
-                    <div className="lesson-loading-item"></div>
-                  </div>
-                ) : lessonContent ? (
-                  <>
-                    {/* Icon and Title */}
-                    <div className="lesson-detail-header">
-                      <div
-                        className="lesson-detail-icon"
-                        style={{ backgroundColor: selectedLesson.categoryColor }}
-                      >
-                        {getTypeIcon(selectedLesson.type)}
-                      </div>
-                      <div>
-                        <h3 className="lesson-detail-title">{selectedLesson.title}</h3>
-                        <p className="lesson-detail-category">{selectedLesson.category}</p>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="lesson-detail-description">
-                      <p>{selectedLesson.description}</p>
-                    </div>
-
-                    {/* Meta Information */}
-                    <div className="lesson-detail-meta">
-                      <div className="lesson-meta-item">
-                        <span className="lesson-meta-label">Duration</span>
-                        <span className="lesson-meta-value">
-                          <Clock className="w-4 h-4" />
-                          {selectedLesson.duration} min
-                        </span>
-                      </div>
-                      <div className="lesson-meta-item">
-                        <span className="lesson-meta-label">Difficulty</span>
-                        <span
-                          className={`lesson-difficulty ${getDifficultyColor(selectedLesson.difficulty)}`}
-                        >
-                          {selectedLesson.difficulty}
-                        </span>
-                      </div>
-                      <div className="lesson-meta-item">
-                        <span className="lesson-meta-label">Type</span>
-                        <span className="lesson-meta-value capitalize">{selectedLesson.type}</span>
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    {selectedLesson.tags.length > 0 && (
-                      <div className="lesson-detail-tags">
-                        <p className="lesson-detail-tags-label">Tags</p>
-                        <div className="lesson-detail-tags-list">
-                          {selectedLesson.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="lesson-detail-tag"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Lesson Content */}
-                    {lessonContent.type === "TEXT" && (
-                      <div className="lesson-content-section">
-                        <div
-                          className="lesson-content-text"
-                          dangerouslySetInnerHTML={{
-                            __html: lessonContent.content
-                              .replace(/\n/g, "<br>")
-                              .replace(
-                                /`([^`]+)`/g,
-                                "<code class='lesson-content-code'>$1</code>",
-                              )
-                              .replace(/\*\*([^*]+)\*\*/g, "<strong class='lesson-content-strong'>$1</strong>")
-                              .replace(/\*([^*]+)\*/g, "<em class='lesson-content-em'>$1</em>"),
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Completed Badge */}
-                    {selectedLesson.completed && (
-                      <div className="lesson-completed-section">
-                        <span className="lesson-completed-check">✓</span>
-                        <div className="lesson-completed-content">
-                          <h3>Completed</h3>
-                          <p>You've finished this lesson</p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="lesson-error">
-                    <p>Unable to load lesson content</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      ) : (
+        <div className="text-center py-16 rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-slate-50/50 dark:bg-slate-900/50">
+          <Search className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1.5">No lessons found</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Try adjusting your search or filters</p>
+          <button onClick={resetFilters} className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Clear filters</button>
+        </div>
+      )}
     </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════
+   BookmarkButton — thin wrapper around existing component
+   ══════════════════════════════════════════════════════════ */
+import { useTransition } from "react"
+import { Bookmark } from "lucide-react"
+
+function BookmarkButton({ lessonId }: { lessonId: number }) {
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [isPending, startTransition] = useTransition()
+
+  const toggle = () => {
+    startTransition(async () => {
+      setIsBookmarked((prev) => !prev)
+      try {
+        await fetch("/api/bookmarks", {
+          method: isBookmarked ? "DELETE" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lessonId }),
+        })
+      } catch {
+        setIsBookmarked((prev) => !prev)
+      }
+    })
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={isPending}
+      aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+      className={cn(
+        "p-2 rounded-xl transition-all duration-200",
+        isBookmarked
+          ? "bg-amber-50 dark:bg-amber-500/15 text-amber-500"
+          : "bg-white/60 dark:bg-slate-800/60 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50",
+      )}
+    >
+      <Bookmark className={cn("w-4.5 h-4.5 transition-all", isBookmarked && "fill-current")} />
+    </button>
   )
 }

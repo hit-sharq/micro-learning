@@ -43,7 +43,7 @@ export function SearchAndFilter({ onSearch, loading = false }: SearchAndFilterPr
     duration: "Any Duration",
   })
 
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debounced search
   useEffect(() => {

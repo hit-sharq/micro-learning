@@ -20,10 +20,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
       where: { userId: params.id },
     })
 
-    // Reset user streaks
-    await prisma.user.update({
-      where: { id: params.id },
-      data: {
+    // Reset user streaks (upsert because a streak record may not yet exist
+    // for a brand-new user)
+    await prisma.userStreak.upsert({
+      where: { userId: params.id },
+      create: {
+        userId: params.id,
+        currentStreak: 0,
+        longestStreak: 0,
+      },
+      update: {
         currentStreak: 0,
         longestStreak: 0,
       },
